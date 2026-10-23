@@ -1,32 +1,42 @@
-import { Option } from 'effect'
+import { Number, Option, String } from 'effect'
 import { Update } from 'foldkit'
 import type { Block } from 'foldkit'
 import { modifyFields } from 'foldkit/struct'
 
 import { GenerateSongIds, SaveLibrary } from './command'
-import { PLACEHOLDER_SECTION_ID, PLACEHOLDER_SONG_ID } from './constant'
+import { MAX_CAPO, MAX_TRANSPOSE } from './constant'
 import { ApplicationDefinition } from './definition'
-import { Song } from './domain'
+import { Line, Section, Song } from './domain'
+import { EditorInstance, PlayInstance } from './model'
 import { EditorBlock, HomeBlock, PlayBlock } from './page'
 import { ToastBlock } from './toast'
-
-const placeholderSong = Song.create(PLACEHOLDER_SONG_ID, PLACEHOLDER_SECTION_ID)
 
 export const HomeBinding = ApplicationDefinition.makeBinding(HomeBlock, {
   field: 'home',
 })
 
 export const EditorBinding = ApplicationDefinition.makeBinding(EditorBlock, {
-  field: 'editor',
-  init: { contextToArgs: song => [song] },
+  field: 'maybeEditorInstance',
+  key: 'songId',
+  childField: 'model',
+  delivery: {
+    when: (model, songId) => Option.isSome(Song.findById(model.songs, songId)),
+    toUpdateContext: (model, songId) => [Song.findById(model.songs, songId)],
+  },
   subscriptions: {
-    when: model => model.route._tag === 'SongEdit',
+    when: (model, songId) =>
+      model.route._tag === 'SongEdit' && model.route.songId === songId,
   },
 })
 
 export const PlayBinding = ApplicationDefinition.makeBinding(PlayBlock, {
-  field: 'play',
-  init: { contextToArgs: song => [song] },
+  field: 'maybePlayInstance',
+  key: 'songId',
+  childField: 'model',
+  delivery: {
+    when: (model, songId) => Option.isSome(Song.findById(model.songs, songId)),
+    toUpdateContext: (model, songId) => [Song.findById(model.songs, songId)],
+  },
 })
 
 export const ToastBinding = ApplicationDefinition.makeBinding(ToastBlock, {
@@ -34,31 +44,66 @@ export const ToastBinding = ApplicationDefinition.makeBinding(ToastBlock, {
   init: { contextToArgs: () => [{ id: 'app-toast' }] },
 })
 
-const saveSongs = (songs: ReadonlyArray<Song.Song>) =>
-  ApplicationDefinition.makeStep(model => ({
-    model: modifyFields(model, { songs: () => songs }),
-    commands: [SaveLibrary({ songs })],
-  }))
+const initEditor = (songId: string) =>
+  ApplicationDefinition.makeStep(model => {
+    if (
+      Option.exists(
+        model.maybeEditorInstance,
+        instance => instance.songId === songId,
+      )
+    ) {
+      return { model }
+    }
+    return EditorBinding.init({
+      key: songId,
+      args: [],
+      toParentModel: editor =>
+        modifyFields(model, {
+          maybeEditorInstance: () =>
+            Option.some(EditorInstance.make({ songId, model: editor })),
+        }),
+    })
+  })
 
-const resetEditor = (songId: string) =>
-  ApplicationDefinition.makeStep(model =>
-    model.editor.song.id === songId
-      ? EditorBinding.init({
-          args: [placeholderSong],
-          toParentModel: editor =>
-            modifyFields(model, { editor: () => editor }),
-        })
-      : { model },
-  )
+const initPlay = (songId: string) =>
+  ApplicationDefinition.makeStep(model => {
+    if (
+      Option.exists(
+        model.maybePlayInstance,
+        instance => instance.songId === songId,
+      )
+    ) {
+      return { model }
+    }
+    return PlayBinding.init({
+      key: songId,
+      args: [],
+      toParentModel: play =>
+        modifyFields(model, {
+          maybePlayInstance: () =>
+            Option.some(PlayInstance.make({ songId, model: play })),
+        }),
+    })
+  })
 
-const resetPlay = (songId: string) =>
+export const initSongPages = (songId: string) =>
+  Update.combineSteps([initEditor(songId), initPlay(songId)])
+
+const editSong = (
+  songId: string,
+  edit: (song: typeof Song.Song.Type) => typeof Song.Song.Type,
+) =>
   ApplicationDefinition.makeStep(model =>
-    model.play.song.id === songId
-      ? PlayBinding.init({
-          args: [placeholderSong],
-          toParentModel: play => modifyFields(model, { play: () => play }),
-        })
-      : { model },
+    Option.match(Song.findById(model.songs, songId), {
+      onNone: () => ({ model }),
+      onSome: currentSong => {
+        const songs = Song.upsert(model.songs, edit(currentSong))
+        return {
+          model: modifyFields(model, { songs: () => songs }),
+          commands: [SaveLibrary({ songs })],
+        }
+      },
+    }),
   )
 
 const foldHomeOutMessage = ApplicationDefinition.makeOutMessageFold(HomeBlock, {
@@ -68,81 +113,127 @@ const foldHomeOutMessage = ApplicationDefinition.makeOutMessageFold(HomeBlock, {
       commands: [GenerateSongIds()],
     })),
   ConfirmedDeleteSong: ({ songId }) =>
-    Update.combineSteps([
-      resetEditor(songId),
-      resetPlay(songId),
-      ApplicationDefinition.makeStep(model =>
-        saveSongs(Song.remove(model.songs, songId))(model),
+    ApplicationDefinition.makeStep(model => {
+      const songs = Song.remove(model.songs, songId)
+      return {
+        model: modifyFields(model, {
+          songs: () => songs,
+          maybeEditorInstance: Option.filter(
+            instance => instance.songId !== songId,
+          ),
+          maybePlayInstance: Option.filter(
+            instance => instance.songId !== songId,
+          ),
+        }),
+        commands: [SaveLibrary({ songs })],
+      }
+    }),
+})
+
+const foldEditorOutMessage = (songId: string) =>
+  ApplicationDefinition.makeOutMessageFold(EditorBlock, {
+    UpdatedTitle: ({ value }) =>
+      editSong(songId, song => modifyFields(song, { title: () => value })),
+    UpdatedArtist: ({ value }) =>
+      editSong(songId, song => modifyFields(song, { artist: () => value })),
+    UpdatedOriginalKey: ({ value }) =>
+      editSong(songId, song =>
+        modifyFields(song, {
+          maybeOriginalKey: () =>
+            Option.liftPredicate(value.trim(), String.isNonEmpty),
+        }),
       ),
-    ]),
-})
-
-const HomeBindingWithOutMessagePolicy = HomeBinding.withOutMessagePolicy({
-  fold: foldHomeOutMessage,
-})
-
-const foldEditorOutMessage = ApplicationDefinition.makeOutMessageFold(
-  EditorBlock,
-  {
-    UpdatedSong: ({ song }) =>
-      Update.combineSteps([
-        EditorBinding.informSongChanged({ song }),
-        PlayBinding.informSongChanged({ song }),
-        ApplicationDefinition.makeStep(model =>
-          saveSongs(Song.upsert(model.songs, song))(model),
+    UpdatedLyrics: ({ sectionId, draft }) =>
+      editSong(songId, song =>
+        Song.updateSection(song, sectionId, section =>
+          Section.replaceLyrics(section, draft),
         ),
-      ]),
-  },
-)
-
-const EditorBindingWithOutMessagePolicy = EditorBinding.withOutMessagePolicy({
-  fold: foldEditorOutMessage,
-})
-
-const showToast = (
-  variant: 'Success' | 'Error',
-  title: string,
-  maybeDescription: Option.Option<string> = Option.none(),
-) =>
-  ToastBinding.requestShow({
-    variant,
-    payload: { title, maybeDescription },
+      ),
+    RestoredLyrics: ({ sectionId, lines }) =>
+      editSong(songId, song =>
+        Song.updateSection(song, sectionId, section =>
+          modifyFields(section, { lines: () => lines }),
+        ),
+      ),
+    AddedChord: ({ name }) =>
+      editSong(songId, song => Song.addChord(song, name)),
+    RemovedChord: ({ name }) =>
+      editSong(songId, song => Song.removeChord(song, name)),
+    PlacedChord: ({ lineId, mark }) =>
+      editSong(songId, song =>
+        Song.addChord(
+          Song.updateLine(song, lineId, line => Line.upsertMark(line, mark)),
+          mark.name,
+        ),
+      ),
+    RenamedChord: ({ lineId, markId, name }) =>
+      editSong(songId, song =>
+        Song.addChord(
+          Song.updateLine(song, lineId, line =>
+            Line.updateMarkName(line, markId, name),
+          ),
+          name,
+        ),
+      ),
+    ClearedChord: ({ lineId, markId }) =>
+      editSong(songId, song =>
+        Song.updateLine(song, lineId, line => Line.removeMark(line, markId)),
+      ),
+    AddedSection: ({ section }) =>
+      editSong(songId, song => Song.addSection(song, section)),
+    DuplicatedSection: ({ afterSectionId, section }) =>
+      editSong(songId, song =>
+        Song.insertSectionAfter(song, afterSectionId, section),
+      ),
+    RemovedSection: ({ sectionId }) =>
+      editSong(songId, song => Song.removeSection(song, sectionId)),
+    ReorderedSection: ({ sectionId, toIndex }) =>
+      editSong(songId, song => Song.reorderSections(song, sectionId, toIndex)),
   })
 
-const foldPlayOutMessage = ApplicationDefinition.makeOutMessageFold(PlayBlock, {
-  UpdatedSong: ({ song }) =>
-    Update.combineSteps([
-      EditorBinding.informSongChanged({ song }),
-      PlayBinding.informSongChanged({ song }),
-      ApplicationDefinition.makeStep(model =>
-        saveSongs(Song.upsert(model.songs, song))(model),
+const showToast = (variant: 'Success' | 'Error', title: string) =>
+  ToastBinding.requestShow({
+    variant,
+    payload: { title, maybeDescription: Option.none() },
+  })
+
+const foldPlayOutMessage = (songId: string) =>
+  ApplicationDefinition.makeOutMessageFold(PlayBlock, {
+    AdjustedTranspose: ({ by }) =>
+      editSong(songId, song =>
+        modifyFields(song, {
+          transpose: current =>
+            Number.clamp(current + by, {
+              minimum: -MAX_TRANSPOSE,
+              maximum: MAX_TRANSPOSE,
+            }),
+        }),
       ),
-    ]),
-  CopiedChart: () => showToast('Success', 'Chart copied'),
-  FailedCopy: ({ error }) => showToast('Error', error),
-})
-
-const PlayBindingWithOutMessagePolicy = PlayBinding.withOutMessagePolicy({
-  fold: foldPlayOutMessage,
-})
-
-const foldToastOutMessage = ApplicationDefinition.makeOutMessageFold(
-  ToastBlock,
-  {
-    DismissedToast: ApplicationDefinition.makeNoopStep,
-  },
-)
-
-const ToastBindingWithOutMessagePolicy = ToastBinding.withOutMessagePolicy({
-  fold: foldToastOutMessage,
-})
+    AdjustedCapo: ({ by }) =>
+      editSong(songId, song =>
+        modifyFields(song, {
+          capo: current =>
+            Number.clamp(current + by, { minimum: 0, maximum: MAX_CAPO }),
+        }),
+      ),
+    CopiedChart: () => showToast('Success', 'Chart copied'),
+    FailedCopy: ({ error }) => showToast('Error', error),
+  })
 
 export const ApplicationComposition = ApplicationDefinition.makeComposition({
   bindings: [
-    HomeBindingWithOutMessagePolicy,
-    EditorBindingWithOutMessagePolicy,
-    PlayBindingWithOutMessagePolicy,
-    ToastBindingWithOutMessagePolicy,
+    HomeBinding.withOutMessagePolicy({ fold: foldHomeOutMessage }),
+    EditorBinding.withOutMessagePolicy({
+      fold: (songId, outMessage) => foldEditorOutMessage(songId)(outMessage),
+    }),
+    PlayBinding.withOutMessagePolicy({
+      fold: (songId, outMessage) => foldPlayOutMessage(songId)(outMessage),
+    }),
+    ToastBinding.withOutMessagePolicy({
+      fold: ApplicationDefinition.makeOutMessageFold(ToastBlock, {
+        DismissedToast: ApplicationDefinition.makeNoopStep,
+      }),
+    }),
   ],
 })
 export type ApplicationViewBuilder = Block.ViewBuilderFor<

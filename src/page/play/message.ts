@@ -1,10 +1,7 @@
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
-import { Song } from '../../domain'
-
 export const Message = defineMessageUnion({
-  InformedOfSongChange: { song: Song.Song },
   ClickedTransposeDown: {},
   ClickedTransposeUp: {},
   ClickedCapoDown: {},
@@ -13,13 +10,12 @@ export const Message = defineMessageUnion({
   SucceededCopyChart: {},
   FailedCopyChart: { error: Schema.String },
 })
-export type Message = typeof Message.Type
 
 // OUT MESSAGE
 
 export const OutMessage = defineMessageUnion({
-  UpdatedSong: { song: Song.Song },
+  AdjustedTranspose: { by: Schema.Number },
+  AdjustedCapo: { by: Schema.Number },
   CopiedChart: {},
   FailedCopy: { error: Schema.String },
 })
-export type OutMessage = typeof OutMessage.Type

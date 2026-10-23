@@ -1,12 +1,15 @@
+import { Option } from 'effect'
 import {
   Command,
   Mount,
   click,
   expect,
+  expectOutMessage,
   given,
   pointerDown,
   role,
   scene,
+  withViewInputs,
 } from 'foldkit/scene'
 import { modifyFields } from 'foldkit/struct'
 import { describe, test } from 'vitest'
@@ -14,11 +17,12 @@ import { describe, test } from 'vitest'
 import { Menu } from '@foldkit/ui'
 
 import { Line, Song } from '../../domain'
+import { EditorBlock } from './block'
 import { GenerateEditorIds } from './command'
 import { init } from './init'
 import { ChordMenuBlock } from './menu'
-import { IdRequest, Message } from './message'
-import { update } from './update'
+import { IdRequest, Message, OutMessage } from './message'
+import { update as contextualUpdate } from './update'
 import { view } from './view'
 
 const song = Song.updateSection(
@@ -30,17 +34,21 @@ const song = Song.updateSection(
     }),
 )
 
-const editorInit = init(song)
+const editorInit = init()
+const update = (
+  model: typeof EditorBlock.Model.Type,
+  message: typeof EditorBlock.Message.Type,
+) => contextualUpdate(model, message, Option.some(song))
+const sceneView = withViewInputs(view, { song })
 
 describe('editor view', () => {
   test('clicking a lyric word then a song chord places it', () => {
-    const withPalette = modifyFields(editorInit.model, {
-      song: () => modifyFields(song, { chords: () => ['G'] }),
-    })
-
     scene(
-      { update, view },
-      given(withPalette),
+      {
+        update,
+        view: sceneView({ song: modifyFields(song, { chords: () => ['G'] }) }),
+      },
+      given(editorInit.model),
       expect(role('heading', { name: 'Untitled' })).toExist(),
       expect(role('button', { name: 'Place chord on Hello' })).toExist(),
       click(role('button', { name: 'Place chord on Hello' })),
@@ -66,6 +74,7 @@ describe('editor view', () => {
         Message.CompletedGenerateEditorIds({
           ids: ['mark-1'],
           request: IdRequest.NewMark({
+            expectedLyric: 'Hello world',
             lineId: 'line-1',
             at: 0,
             name: 'G',
@@ -74,13 +83,18 @@ describe('editor view', () => {
       ),
       Mount.expectEnded(Menu.test.AnchorMenu),
       Mount.expectEnded(Menu.test.PortalMenuBackdrop),
-      expect(role('button', { name: 'Edit chord G on Hello' })).toExist(),
+      expectOutMessage(
+        OutMessage.PlacedChord({
+          lineId: 'line-1',
+          mark: { id: 'mark-1', at: 0, name: 'G' },
+        }),
+      ),
     )
   })
 
   test('section reorder starts from the drag handle, not the card body', () => {
     scene(
-      { update, view },
+      { update, view: sceneView() },
       given(editorInit.model),
       expect(role('option', { name: 'Reorder Verse' })).toExist(),
       expect(role('option', { name: 'Reorder Verse' })).toHaveAttr(

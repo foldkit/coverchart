@@ -21,9 +21,7 @@ export const Song = Schema.Struct({
   sections: Schema.Array(Section),
 })
 
-export type Song = typeof Song.Type
-
-export const create = (id: string, sectionId: string): Song => ({
+export const create = (id: string, sectionId: string): typeof Song.Type => ({
   id,
   title: '',
   artist: '',
@@ -34,20 +32,21 @@ export const create = (id: string, sectionId: string): Song => ({
   sections: [SectionModule.empty(sectionId, 'Verse')],
 })
 
-export const displayTitle = (song: Song): string =>
+export const displayTitle = (song: typeof Song.Type): string =>
   pipe(song.title, String.trim, title =>
     String.isNonEmpty(title) ? title : 'Untitled',
   )
 
 export const findById = (
-  songs: ReadonlyArray<Song>,
+  songs: ReadonlyArray<typeof Song.Type>,
   songId: string,
-): Option.Option<Song> => Array.findFirst(songs, ({ id }) => id === songId)
+): Option.Option<typeof Song.Type> =>
+  Array.findFirst(songs, ({ id }) => id === songId)
 
 export const upsert = (
-  songs: ReadonlyArray<Song>,
-  song: Song,
-): ReadonlyArray<Song> =>
+  songs: ReadonlyArray<typeof Song.Type>,
+  song: typeof Song.Type,
+): ReadonlyArray<typeof Song.Type> =>
   Option.match(
     Array.findFirstIndex(songs, ({ id }) => id === song.id),
     {
@@ -60,11 +59,15 @@ export const upsert = (
   )
 
 export const remove = (
-  songs: ReadonlyArray<Song>,
+  songs: ReadonlyArray<typeof Song.Type>,
   songId: string,
-): ReadonlyArray<Song> => Array.filter(songs, ({ id }) => id !== songId)
+): ReadonlyArray<typeof Song.Type> =>
+  Array.filter(songs, ({ id }) => id !== songId)
 
-export const addChord = (song: Song, name: string): Song => {
+export const addChord = (
+  song: typeof Song.Type,
+  name: string,
+): typeof Song.Type => {
   const chord = pipe(name, String.trim)
   if (pipe(chord, String.isEmpty) || Array.contains(song.chords, chord)) {
     return song
@@ -73,10 +76,16 @@ export const addChord = (song: Song, name: string): Song => {
   return modifyFields(song, { chords: Array.append(chord) })
 }
 
-export const removeChord = (song: Song, name: string): Song =>
+export const removeChord = (
+  song: typeof Song.Type,
+  name: string,
+): typeof Song.Type =>
   modifyFields(song, { chords: Array.filter(chord => chord !== name) })
 
-export const matchesQuery = (song: Song, query: string): boolean => {
+export const matchesQuery = (
+  song: typeof Song.Type,
+  query: string,
+): boolean => {
   const normalized = pipe(query, String.trim, String.toLowerCase)
   if (pipe(normalized, String.isEmpty)) {
     return true
@@ -88,15 +97,16 @@ export const matchesQuery = (song: Song, query: string): boolean => {
 }
 
 export const filterByQuery = (
-  songs: ReadonlyArray<Song>,
+  songs: ReadonlyArray<typeof Song.Type>,
   query: string,
-): ReadonlyArray<Song> => Array.filter(songs, song => matchesQuery(song, query))
+): ReadonlyArray<typeof Song.Type> =>
+  Array.filter(songs, song => matchesQuery(song, query))
 
 export const updateSection = (
-  song: Song,
+  song: typeof Song.Type,
   sectionId: string,
-  f: (section: Section) => Section,
-): Song =>
+  f: (section: typeof Section.Type) => typeof Section.Type,
+): typeof Song.Type =>
   modifyFields(song, {
     sections: Array.map(section =>
       section.id === sectionId ? f(section) : section,
@@ -104,19 +114,21 @@ export const updateSection = (
   })
 
 export const findSection = (
-  song: Song,
+  song: typeof Song.Type,
   sectionId: string,
-): Option.Option<Section> =>
+): Option.Option<typeof Section.Type> =>
   Array.findFirst(song.sections, ({ id }) => id === sectionId)
 
-export const addSection = (song: Song, section: Section): Song =>
-  modifyFields(song, { sections: Array.append(section) })
+export const addSection = (
+  song: typeof Song.Type,
+  section: typeof Section.Type,
+): typeof Song.Type => modifyFields(song, { sections: Array.append(section) })
 
 export const insertSectionAfter = (
-  song: Song,
+  song: typeof Song.Type,
   afterSectionId: string,
-  section: Section,
-): Song =>
+  section: typeof Section.Type,
+): typeof Song.Type =>
   pipe(
     Array.findFirstIndex(song.sections, ({ id }) => id === afterSectionId),
     Option.flatMap(index => Array.insertAt(song.sections, index + 1, section)),
@@ -126,7 +138,10 @@ export const insertSectionAfter = (
     }),
   )
 
-export const removeSection = (song: Song, sectionId: string): Song => {
+export const removeSection = (
+  song: typeof Song.Type,
+  sectionId: string,
+): typeof Song.Type => {
   const remaining = Array.filter(song.sections, ({ id }) => id !== sectionId)
   return Array.match(remaining, {
     onEmpty: () => song,
@@ -135,28 +150,28 @@ export const removeSection = (song: Song, sectionId: string): Song => {
 }
 
 export const reorderSections = (
-  song: Song,
+  song: typeof Song.Type,
   itemId: string,
   toIndex: number,
-): Song =>
+): typeof Song.Type =>
   modifyFields(song, {
     sections: sections => SectionModule.reorder(sections, itemId, toIndex),
   })
 
 export const setKind = (
-  song: Song,
+  song: typeof Song.Type,
   sectionId: string,
-  kind: SectionKind,
-): Song =>
+  kind: typeof SectionKind.Type,
+): typeof Song.Type =>
   updateSection(song, sectionId, section =>
     modifyFields(section, { kind: () => kind }),
   )
 
 export const updateLine = (
-  song: Song,
+  song: typeof Song.Type,
   lineId: string,
-  f: (line: Line.LyricLine) => Line.LyricLine,
-): Song =>
+  f: (line: typeof Line.LyricLine.Type) => typeof Line.LyricLine.Type,
+): typeof Song.Type =>
   modifyFields(song, {
     sections: Array.map(section =>
       SectionModule.updateLine(section, lineId, f),
@@ -164,9 +179,9 @@ export const updateLine = (
   })
 
 export const findLine = (
-  song: Song,
+  song: typeof Song.Type,
   lineId: string,
-): Option.Option<Line.LyricLine> =>
+): Option.Option<typeof Line.LyricLine.Type> =>
   pipe(
     song.sections,
     Array.findFirst(section =>
@@ -179,7 +194,7 @@ const padRight = (text: string, width: number): string =>
   text.length >= width ? text : text + ' '.repeat(width - text.length)
 
 const formatLine = (
-  line: Line.LyricLine,
+  line: typeof Line.LyricLine.Type,
   transposeSteps: number,
   capo: number,
 ): string => {
@@ -195,7 +210,7 @@ const formatLine = (
 }
 
 const formatSection = (
-  section: Section,
+  section: typeof Section.Type,
   transposeSteps: number,
   capo: number,
 ): string => {
@@ -212,7 +227,7 @@ const formatSection = (
   })
 }
 
-export const toChartText = (song: Song): string => {
+export const toChartText = (song: typeof Song.Type): string => {
   const title = displayTitle(song)
   const artistLine = pipe(song.artist, String.trim)
   const keyLine = Option.match(song.maybeOriginalKey, {

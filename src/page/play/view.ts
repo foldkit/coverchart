@@ -12,7 +12,10 @@ import { Message } from './message'
 const formatSigned = (value: number): string =>
   value > 0 ? `+${globalThis.String(value)}` : globalThis.String(value)
 
-const metaLineView = (song: Song.Song, h: PlayViewBuilder): Html => {
+const metaLineView = (
+  song: typeof Song.Song.Type,
+  h: PlayViewBuilder,
+): Html => {
   const keyText = Option.match(song.maybeOriginalKey, {
     onNone: () => '',
     onSome: key => `Key ${key}`,
@@ -99,51 +102,51 @@ const controlsView = (h: PlayViewBuilder): Html =>
     ],
   )
 
-export const view = PlayComposition.makeView((model, h) =>
-  h.main(
-    [h.Class('flex flex-col gap-8')],
-    [
-      h.header(
-        [h.Class('flex flex-col gap-4')],
-        [
-          h.div(
-            [h.Class('flex flex-wrap items-center justify-between gap-3')],
-            [
-              h.h1(
-                [h.Class(className.heading)],
-                [Song.displayTitle(model.song)],
-              ),
-              h.div(
-                [h.Class('flex flex-wrap gap-2')],
-                [
-                  h.a(
-                    [h.Href(homeRouter()), h.Class(className.quietButton)],
-                    ['Library'],
-                  ),
-                  h.a(
-                    [
-                      h.Href(songEditRouter({ songId: model.song.id })),
-                      h.Class(className.secondaryButton),
-                    ],
-                    ['Edit'],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          metaLineView(model.song, h),
-          controlsView(h),
-        ],
-      ),
-      h.pre(
-        [
-          h.Class(
-            'overflow-x-auto whitespace-pre-wrap rounded-lg border border-stone-200 bg-white p-6 font-mono text-base leading-7 text-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100',
-          ),
-          h.AriaLabel('Chord chart'),
-        ],
-        [Song.toChartText(model.song)],
-      ),
-    ],
-  ),
+type ViewInputs = Readonly<{ song: typeof Song.Song.Type }>
+
+export const view = PlayComposition.makeView.withInputs<ViewInputs>(
+  (_model, { song }, h) =>
+    h.main(
+      [h.Class('flex flex-col gap-8')],
+      [
+        h.header(
+          [h.Class('flex flex-col gap-4')],
+          [
+            h.div(
+              [h.Class('flex flex-wrap items-center justify-between gap-3')],
+              [
+                h.h1([h.Class(className.heading)], [Song.displayTitle(song)]),
+                h.div(
+                  [h.Class('flex flex-wrap gap-2')],
+                  [
+                    h.a(
+                      [h.Href(homeRouter()), h.Class(className.quietButton)],
+                      ['Library'],
+                    ),
+                    h.a(
+                      [
+                        h.Href(songEditRouter({ songId: song.id })),
+                        h.Class(className.secondaryButton),
+                      ],
+                      ['Edit'],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            metaLineView(song, h),
+            controlsView(h),
+          ],
+        ),
+        h.pre(
+          [
+            h.Class(
+              'overflow-x-auto whitespace-pre-wrap rounded-lg border border-stone-200 bg-white p-6 font-mono text-base leading-7 text-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100',
+            ),
+            h.AriaLabel('Chord chart'),
+          ],
+          [Song.toChartText(song)],
+        ),
+      ],
+    ),
 )

@@ -7,7 +7,6 @@ export const Message = defineMessageUnion({
   ClickedDeleteSong: { songId: Schema.String },
   ClickedConfirmDelete: {},
 })
-export type Message = typeof Message.Type
 
 // OUT MESSAGE
 
@@ -15,4 +14,3 @@ export const OutMessage = defineMessageUnion({
   RequestedNewSong: {},
   ConfirmedDeleteSong: { songId: Schema.String },
 })
-export type OutMessage = typeof OutMessage.Type

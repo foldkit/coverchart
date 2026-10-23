@@ -1,3 +1,4 @@
+import { Option } from 'effect'
 import {
   Command,
   expectNoOutMessage,
@@ -13,12 +14,13 @@ import { describe, expect, test } from 'vitest'
 import { Menu } from '@foldkit/ui'
 
 import { Line, Song } from '../../domain'
+import { EditorBlock } from './block'
 import { GenerateEditorIds } from './command'
 import { ChordMenuBinding } from './composition'
 import { init } from './init'
 import { ChordMenuBlock } from './menu'
 import { IdRequest, Message, OutMessage } from './message'
-import { update } from './update'
+import { update as contextualUpdate } from './update'
 
 const baseSong = Song.create('song-1', 'section-1')
 const song = Song.updateSection(baseSong, 'section-1', section =>
@@ -27,7 +29,11 @@ const song = Song.updateSection(baseSong, 'section-1', section =>
   }),
 )
 
-const editorInit = init(song)
+const editorInit = init()
+const update = (
+  model: typeof EditorBlock.Model.Type,
+  message: typeof EditorBlock.Message.Type,
+) => contextualUpdate(model, message, Option.some(song))
 const emptyChordMenuView = ChordMenuBlock.makeView((_model, h) => h.empty)
 
 const chordMenuMessage = (message: typeof ChordMenuBlock.Message.Type) =>
@@ -38,23 +44,19 @@ const chordMenuMessage = (message: typeof ChordMenuBlock.Message.Type) =>
   }).toParentMessage(message)
 
 describe('editor', () => {
-  test('updating the title emits the changed song', () => {
+  test('updating the title reports the new value', () => {
     story(
       update,
       given(editorInit.model),
       message(Message.UpdatedTitle({ value: 'Blackbird' })),
-      expectOutMessage(
-        OutMessage.UpdatedSong({
-          song: modifyFields(song, { title: () => 'Blackbird' }),
-        }),
-      ),
+      expectOutMessage(OutMessage.UpdatedTitle({ value: 'Blackbird' })),
       model(current => {
-        expect(current.song.title).toBe('Blackbird')
+        expect(current.mode._tag).toBe('Viewing')
       }),
     )
   })
 
-  test('typing lyrics writes them onto the song so they persist', () => {
+  test('typing lyrics reports edits without storing a second draft', () => {
     const draft = 'Hello world\nFrom a song'
 
     story(
@@ -63,9 +65,14 @@ describe('editor', () => {
       message(Message.ClickedEditLyrics({ sectionId: 'section-1' })),
       expectNoOutMessage(),
       message(Message.UpdatedLyricsDraft({ value: draft })),
+      expectOutMessage(
+        OutMessage.UpdatedLyrics({ sectionId: 'section-1', draft }),
+      ),
       model(current => {
-        expect(current.song.sections[0]?.lines[0]?.lyric).toBe('Hello world')
-        expect(current.song.sections[0]?.lines[1]?.lyric).toBe('From a song')
+        expect(current.mode).toMatchObject({
+          _tag: 'EditingLyrics',
+          sectionId: 'section-1',
+        })
       }),
     )
   })
@@ -110,11 +117,7 @@ describe('editor', () => {
       given(editorInit.model),
       message(Message.UpdatedPaletteDraft({ value: 'G' })),
       message(Message.SubmittedPaletteChord()),
-      expectOutMessage(
-        OutMessage.UpdatedSong({
-          song: modifyFields(song, { chords: () => ['G'] }),
-        }),
-      ),
+      expectOutMessage(OutMessage.AddedChord({ name: 'G' })),
       message(Message.ClickedWord({ lineId: 'line-1', at: 0 })),
       Command.resolve(
         Menu.test.FocusMenuItems,
@@ -133,6 +136,7 @@ describe('editor', () => {
         GenerateEditorIds({
           count: 1,
           request: IdRequest.NewMark({
+            expectedLyric: 'Hello world',
             lineId: 'line-1',
             at: 0,
             name: 'G',
@@ -144,12 +148,42 @@ describe('editor', () => {
         Message.CompletedGenerateEditorIds({
           ids: ['mark-1'],
           request: IdRequest.NewMark({
+            expectedLyric: 'Hello world',
             lineId: 'line-1',
             at: 0,
             name: 'G',
           }),
         }),
       ),
+    )
+  })
+})
+
+describe('in-flight chord placement', () => {
+  test('ignores generated IDs when the target lyric has changed', () => {
+    const changedSong = Song.updateLine(song, 'line-1', line =>
+      modifyFields(line, { lyric: () => 'Different words' }),
+    )
+    const updateWithChangedSong = (
+      model: typeof EditorBlock.Model.Type,
+      message: typeof EditorBlock.Message.Type,
+    ) => contextualUpdate(model, message, Option.some(changedSong))
+
+    story(
+      updateWithChangedSong,
+      given(editorInit.model),
+      message(
+        Message.CompletedGenerateEditorIds({
+          ids: ['old-mark'],
+          request: IdRequest.NewMark({
+            lineId: 'line-1',
+            expectedLyric: 'Hello world',
+            at: 0,
+            name: 'G',
+          }),
+        }),
+      ),
+      expectNoOutMessage(),
     )
   })
 })

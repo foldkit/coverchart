@@ -28,6 +28,27 @@ pnpm lint
 pnpm format
 ```
 
+## State ownership
+
+The root Model's `songs` collection is the canonical library. Home, Editor, and
+Play receive songs through view inputs. Editor and Play also receive the matching
+canonical song as update context through their Bindings.
+
+Editor owns its menus, dialogs, drag state, chord input, and editing mode. Lyrics
+autosave to the canonical song while typing; cancel restores an intentional
+snapshot of that section's original lines. Play owns its clipboard interaction.
+Neither Block stores a synchronized copy of the song.
+
+Children report edits directly through OutMessages such as `UpdatedTitle` and
+`PlacedChord`. The parent applies each edit to the latest song and returns a `SaveLibrary` Command. The Runtime performs the
+write. Save results identify their snapshot so an older save cannot complete a
+new song's pending navigation.
+
+Editor and Play instances are keyed by song ID in optional parent-owned wrappers.
+The Runtime rejects delayed results from a replaced occurrence, including a
+previous visit to the same song. Chord placement also checks its original lyric
+before applying generated mark IDs.
+
 ## Foldkit preview
 
 This application tracks the Blocks + Effect Layers preview at

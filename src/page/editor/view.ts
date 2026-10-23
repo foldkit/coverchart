@@ -25,22 +25,20 @@ import {
   type EditorViewBuilder,
   SectionDragAndDropBinding,
 } from './composition'
-import {
-  isEditingSection,
-  lineView,
-  lyricsDraft,
-  maybePlacingChord,
-} from './lineView'
+import { isEditingSection, lineView, maybePlacingChord } from './lineView'
 import { Message } from './message'
-import { Model } from './model'
+import { Announcement, Model } from './model'
 
-const MENU_ANCHOR: AnchorConfig = {
+const MENU_ANCHOR: typeof AnchorConfig.Type = {
   placement: 'bottom-start',
   gap: 4,
   padding: 8,
 }
 
-const metadataView = (song: Song.Song, h: EditorViewBuilder): Html =>
+const metadataView = (
+  song: typeof Song.Song.Type,
+  h: EditorViewBuilder,
+): Html =>
   h.div(
     [h.Class('grid gap-4 sm:grid-cols-3')],
     [
@@ -77,7 +75,8 @@ const metadataView = (song: Song.Song, h: EditorViewBuilder): Html =>
   )
 
 const paletteChipView = (name: string, h: EditorViewBuilder): Html =>
-  h.div(
+  h.keyed('div')(
+    name,
     [
       h.Class(
         'inline-flex overflow-hidden rounded-md border border-stone-300 dark:border-stone-600',
@@ -106,7 +105,11 @@ const paletteChipView = (name: string, h: EditorViewBuilder): Html =>
     ],
   )
 
-const paletteView = (model: Model, h: EditorViewBuilder): Html =>
+const paletteView = (
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
+  h: EditorViewBuilder,
+): Html =>
   h.div(
     [
       h.Class(
@@ -121,7 +124,7 @@ const paletteView = (model: Model, h: EditorViewBuilder): Html =>
             [h.Class('text-sm font-medium text-stone-600 dark:text-stone-400')],
             ['Chords in this song'],
           ),
-          Array.match(model.song.chords, {
+          Array.match(song.chords, {
             onEmpty: () =>
               h.p(
                 [h.Class('text-sm text-stone-500 dark:text-stone-400')],
@@ -229,8 +232,9 @@ const emptySectionBodyView = (h: EditorViewBuilder): Html =>
   )
 
 const chordLinesView = (
-  section: Section.Section,
-  model: Model,
+  section: typeof Section.Section.Type,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
   h: EditorViewBuilder,
 ): Html =>
   Array.match(section.lines, {
@@ -246,7 +250,7 @@ const chordLinesView = (
               lineView(
                 line,
                 maybePlacingChord(model),
-                model.song.chords,
+                song.chords,
                 model.chordMenu,
                 h,
               ),
@@ -257,16 +261,17 @@ const chordLinesView = (
   })
 
 const sectionBodyView = (
-  section: Section.Section,
-  model: Model,
+  section: typeof Section.Section.Type,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
   h: EditorViewBuilder,
 ): Html =>
   isEditingSection(model, section.id)
-    ? lyricsEditorView(lyricsDraft(model), h)
-    : chordLinesView(section, model, h)
+    ? lyricsEditorView(Section.lyricsText(section), h)
+    : chordLinesView(section, model, song, h)
 
 const sectionActionsView = (
-  section: Section.Section,
+  section: typeof Section.Section.Type,
   canRemove: boolean,
   h: EditorViewBuilder,
 ): Html =>
@@ -331,8 +336,7 @@ const dragHandleIcon = (h: EditorViewBuilder): Html =>
   )
 
 const sectionDragHandleView = (
-  model: Model,
-  section: Section.Section,
+  section: typeof Section.Section.Type,
   index: number,
   render: DragAndDropRenderInfo,
   h: EditorViewBuilder,
@@ -351,8 +355,9 @@ const sectionDragHandleView = (
   )
 
 const sectionView = (
-  model: Model,
-  section: Section.Section,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
+  section: typeof Section.Section.Type,
   index: number,
   canRemove: boolean,
   render: DragAndDropRenderInfo,
@@ -383,7 +388,7 @@ const sectionView = (
       ),
     ],
     [
-      sectionDragHandleView(model, section, index, render, h),
+      sectionDragHandleView(section, index, render, h),
       h.div(
         [h.Class('min-w-0 flex-1 p-4')],
         [
@@ -401,7 +406,7 @@ const sectionView = (
               sectionActionsView(section, canRemove, h),
             ],
           ),
-          sectionBodyView(section, model, h),
+          sectionBodyView(section, model, song, h),
         ],
       ),
     ],
@@ -417,39 +422,41 @@ const dropPlaceholder = (h: EditorViewBuilder): Html =>
   ])
 
 const defaultSectionElements = (
-  model: Model,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
   canRemove: boolean,
   render: DragAndDropRenderInfo,
   h: EditorViewBuilder,
 ): ReadonlyArray<Html> =>
-  Array.map(model.song.sections, (section, index) =>
-    sectionView(model, section, index, canRemove, render, h),
+  Array.map(song.sections, (section, index) =>
+    sectionView(model, song, section, index, canRemove, render, h),
   )
 
 const previewSectionElements = (
-  model: Model,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
   canRemove: boolean,
   render: DragAndDropRenderInfo,
   h: EditorViewBuilder,
 ): ReadonlyArray<Html> => {
   if (!DragAndDrop.isDragging(model.sectionDragAndDrop)) {
-    return defaultSectionElements(model, canRemove, render, h)
+    return defaultSectionElements(model, song, canRemove, render, h)
   }
 
   return Option.match(
     DragAndDrop.maybeDraggedItemId(model.sectionDragAndDrop),
     {
-      onNone: () => defaultSectionElements(model, canRemove, render, h),
+      onNone: () => defaultSectionElements(model, song, canRemove, render, h),
       onSome: draggedId => {
         const maybeTarget = DragAndDrop.maybeDropTarget(
           model.sectionDragAndDrop,
         )
         const visibleSections = Array.filter(
-          model.song.sections,
+          song.sections,
           ({ id }) => id !== draggedId,
         )
         const sectionElements = Array.map(visibleSections, (section, index) =>
-          sectionView(model, section, index, canRemove, render, h),
+          sectionView(model, song, section, index, canRemove, render, h),
         )
 
         const isTargetList = Option.exists(
@@ -470,10 +477,18 @@ const previewSectionElements = (
           model.sectionDragAndDrop.dragState._tag === 'Dragging'
         const insertElement = isPointerDrag
           ? dropPlaceholder(h)
-          : Option.match(Song.findSection(model.song, draggedId), {
+          : Option.match(Song.findSection(song, draggedId), {
               onNone: () => dropPlaceholder(h),
               onSome: section =>
-                sectionView(model, section, targetIndex, canRemove, render, h),
+                sectionView(
+                  model,
+                  song,
+                  section,
+                  targetIndex,
+                  canRemove,
+                  render,
+                  h,
+                ),
             })
 
         return pipe(
@@ -486,7 +501,10 @@ const previewSectionElements = (
   )
 }
 
-const addSectionMenuView = (model: Model, h: EditorViewBuilder): Html =>
+const addSectionMenuView = (
+  model: typeof Model.Type,
+  h: EditorViewBuilder,
+): Html =>
   h.div(
     [h.Class('relative')],
     [
@@ -497,7 +515,7 @@ const addSectionMenuView = (model: Model, h: EditorViewBuilder): Html =>
           viewInputs: {
             anchor: MENU_ANCHOR,
             items: Section.SECTION_KINDS,
-            itemToConfig: (kind: Section.SectionKind) => ({
+            itemToConfig: kind => ({
               className:
                 'cursor-pointer px-3 py-2 text-sm text-stone-800 data-[active]:bg-stone-100 dark:text-stone-200 dark:data-[active]:bg-stone-800',
               content: h.span([], [Section.kindLabel(kind)]),
@@ -518,7 +536,10 @@ const addSectionMenuView = (model: Model, h: EditorViewBuilder): Html =>
     ],
   )
 
-const deleteSectionDialogView = (model: Model, h: EditorViewBuilder): Html =>
+const deleteSectionDialogView = (
+  model: typeof Model.Type,
+  h: EditorViewBuilder,
+): Html =>
   h.block(
     DeleteSectionDialogBinding.embedView({
       slotId: model.deleteSectionDialog.id,
@@ -607,7 +628,11 @@ const deleteSectionDialogView = (model: Model, h: EditorViewBuilder): Html =>
     }),
   )
 
-const ghostSectionView = (model: Model, h: EditorViewBuilder): Html =>
+const ghostSectionView = (
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
+  h: EditorViewBuilder,
+): Html =>
   Option.match(
     Option.flatMap(
       DragAndDrop.ghostStyle(model.sectionDragAndDrop),
@@ -615,7 +640,7 @@ const ghostSectionView = (model: Model, h: EditorViewBuilder): Html =>
         Option.map(
           Option.flatMap(
             DragAndDrop.maybeDraggedItemId(model.sectionDragAndDrop),
-            sectionId => Song.findSection(model.song, sectionId),
+            sectionId => Song.findSection(song, sectionId),
           ),
           section => ({ ghostStyle, section }),
         ),
@@ -640,7 +665,8 @@ const ghostSectionView = (model: Model, h: EditorViewBuilder): Html =>
   )
 
 const sectionsView = (
-  model: Model,
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
   canRemove: boolean,
   h: EditorViewBuilder,
 ): Html =>
@@ -658,72 +684,99 @@ const sectionsView = (
                   h.Class('flex flex-col gap-4'),
                   ...render.droppable(SECTIONS_CONTAINER_ID, 'Sections'),
                 ],
-                previewSectionElements(model, canRemove, render, h),
+                previewSectionElements(model, song, canRemove, render, h),
               ),
-              ghostSectionView(model, h),
+              ghostSectionView(model, song, h),
             ],
           ),
       },
     }),
   )
 
-export const view = EditorComposition.makeView((model, h) => {
-  const canRemove = Array.match(Array.drop(model.song.sections, 1), {
-    onEmpty: () => false,
-    onNonEmpty: () => true,
+type ViewInputs = Readonly<{ song: typeof Song.Song.Type }>
+
+const announcementText = (
+  announcement: typeof Announcement.Type,
+  song: typeof Song.Song.Type,
+): string =>
+  Announcement.match(announcement, {
+    None: () => '',
+    Cancelled: () => 'Section move cancelled.',
+    Reordered: ({ sectionId, toIndex }) => {
+      const kind = Option.match(Song.findSection(song, sectionId), {
+        onNone: () => 'Section',
+        onSome: section => Section.kindLabel(section.kind),
+      })
+      return `${kind} moved to position ${globalThis.String(toIndex + 1)}.`
+    },
   })
 
-  return h.main(
-    [h.Class('flex flex-col gap-8')],
-    [
-      h.header(
-        [h.Class('flex flex-col gap-4')],
-        [
-          h.div(
-            [h.Class('flex flex-wrap items-center justify-between gap-3')],
-            [
-              h.h1(
-                [h.Class(className.heading)],
-                [Song.displayTitle(model.song)],
-              ),
-              h.div(
-                [h.Class('flex flex-wrap gap-2')],
-                [
-                  h.a(
-                    [h.Href(homeRouter()), h.Class(className.quietButton)],
-                    ['Library'],
-                  ),
-                  h.a(
-                    [
-                      h.Href(songPlayRouter({ songId: model.song.id })),
-                      h.Class(className.secondaryButton),
-                    ],
-                    ['Play'],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          metadataView(model.song, h),
-          paletteView(model, h),
-        ],
-      ),
-      h.div(
-        [h.Class('flex items-center justify-between')],
-        [
-          h.h2(
-            [h.Class('text-sm font-medium text-stone-600 dark:text-stone-400')],
-            ['Sections'],
-          ),
-          addSectionMenuView(model, h),
-        ],
-      ),
-      sectionsView(model, canRemove, h),
-      h.div(
-        [h.Class('sr-only'), h.AriaLive('assertive')],
-        [model.announcement],
-      ),
-      deleteSectionDialogView(model, h),
-    ],
-  )
-})
+export const view = EditorComposition.makeView.withInputs<ViewInputs>(
+  (model, { song }, h) => {
+    const canRemove = Array.match(Array.drop(song.sections, 1), {
+      onEmpty: () => false,
+      onNonEmpty: () => true,
+    })
+
+    return h.main(
+      [
+        h.Class(
+          clsx('flex flex-col gap-8', {
+            'is-dragging': DragAndDrop.isDragging(model.sectionDragAndDrop),
+          }),
+        ),
+      ],
+      [
+        h.header(
+          [h.Class('flex flex-col gap-4')],
+          [
+            h.div(
+              [h.Class('flex flex-wrap items-center justify-between gap-3')],
+              [
+                h.h1([h.Class(className.heading)], [Song.displayTitle(song)]),
+                h.div(
+                  [h.Class('flex flex-wrap gap-2')],
+                  [
+                    h.a(
+                      [h.Href(homeRouter()), h.Class(className.quietButton)],
+                      ['Library'],
+                    ),
+                    h.a(
+                      [
+                        h.Href(songPlayRouter({ songId: song.id })),
+                        h.Class(className.secondaryButton),
+                      ],
+                      ['Play'],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            metadataView(song, h),
+            paletteView(model, song, h),
+          ],
+        ),
+        h.div(
+          [h.Class('flex items-center justify-between')],
+          [
+            h.h2(
+              [
+                h.Class(
+                  'text-sm font-medium text-stone-600 dark:text-stone-400',
+                ),
+              ],
+              ['Sections'],
+            ),
+            addSectionMenuView(model, h),
+          ],
+        ),
+        sectionsView(model, song, canRemove, h),
+        h.div(
+          [h.Class('sr-only'), h.AriaLive('assertive')],
+          [announcementText(model.announcement, song)],
+        ),
+        deleteSectionDialogView(model, h),
+      ],
+    )
+  },
+)

@@ -7,22 +7,18 @@ export const ChordMark = Schema.Struct({
   name: Schema.String,
 })
 
-export type ChordMark = typeof ChordMark.Type
-
 export const LyricLine = Schema.Struct({
   id: Schema.String,
   lyric: Schema.String,
   marks: Schema.Array(ChordMark),
 })
 
-export type LyricLine = typeof LyricLine.Type
-
 export type Word = Readonly<{
   start: number
   text: string
 }>
 
-export const empty = (id: string, lyric = ''): LyricLine => ({
+export const empty = (id: string, lyric = ''): typeof LyricLine.Type => ({
   id,
   lyric,
   marks: [],
@@ -39,10 +35,16 @@ export const words = (lyric: string): ReadonlyArray<Word> =>
     ),
   )
 
-export const markAt = (line: LyricLine, at: number): Option.Option<ChordMark> =>
+export const markAt = (
+  line: typeof LyricLine.Type,
+  at: number,
+): Option.Option<typeof ChordMark.Type> =>
   Array.findFirst(line.marks, mark => mark.at === at)
 
-export const upsertMark = (line: LyricLine, mark: ChordMark): LyricLine =>
+export const upsertMark = (
+  line: typeof LyricLine.Type,
+  mark: typeof ChordMark.Type,
+): typeof LyricLine.Type =>
   modifyFields(line, {
     marks: marks =>
       pipe(
@@ -54,22 +56,28 @@ export const upsertMark = (line: LyricLine, mark: ChordMark): LyricLine =>
   })
 
 export const updateMarkName = (
-  line: LyricLine,
+  line: typeof LyricLine.Type,
   markId: string,
   name: string,
-): LyricLine =>
+): typeof LyricLine.Type =>
   modifyFields(line, {
     marks: Array.map(mark =>
       mark.id === markId ? modifyFields(mark, { name: () => name }) : mark,
     ),
   })
 
-export const removeMark = (line: LyricLine, markId: string): LyricLine =>
+export const removeMark = (
+  line: typeof LyricLine.Type,
+  markId: string,
+): typeof LyricLine.Type =>
   modifyFields(line, {
     marks: Array.filter(({ id }) => id !== markId),
   })
 
-export const setLyric = (line: LyricLine, lyric: string): LyricLine => {
+export const setLyric = (
+  line: typeof LyricLine.Type,
+  lyric: string,
+): typeof LyricLine.Type => {
   const nextStarts = pipe(
     words(lyric),
     Array.map(({ start }) => start),

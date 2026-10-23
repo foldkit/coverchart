@@ -16,8 +16,8 @@ import {
 import { Message } from './message'
 import { Model } from './model'
 
-export type ViewInputs = Readonly<{
-  songs: ReadonlyArray<Song.Song>
+type ViewInputs = Readonly<{
+  songs: ReadonlyArray<typeof Song.Song.Type>
 }>
 
 const emptyLibraryView = (h: HomeViewBuilder): Html =>
@@ -41,7 +41,7 @@ const noMatchesView = (h: HomeViewBuilder): Html =>
     ['No songs match that search.'],
   )
 
-const songRowView = (song: Song.Song, h: HomeViewBuilder): Html =>
+const songRowView = (song: typeof Song.Song.Type, h: HomeViewBuilder): Html =>
   h.keyed('li')(
     song.id,
     [h.Class(className.songCard)],
@@ -95,7 +95,7 @@ const songRowView = (song: Song.Song, h: HomeViewBuilder): Html =>
   )
 
 const songListView = (
-  songs: ReadonlyArray<Song.Song>,
+  songs: ReadonlyArray<typeof Song.Song.Type>,
   h: HomeViewBuilder,
 ): Html =>
   h.ul(
@@ -104,8 +104,8 @@ const songListView = (
   )
 
 const libraryBodyView = (
-  allSongs: ReadonlyArray<Song.Song>,
-  visibleSongs: ReadonlyArray<Song.Song>,
+  allSongs: ReadonlyArray<typeof Song.Song.Type>,
+  visibleSongs: ReadonlyArray<typeof Song.Song.Type>,
   h: HomeViewBuilder,
 ): Html =>
   Array.match(allSongs, {
@@ -117,7 +117,7 @@ const libraryBodyView = (
       }),
   })
 
-const deleteDialogView = (model: Model, h: HomeViewBuilder): Html =>
+const deleteDialogView = (model: typeof Model.Type, h: HomeViewBuilder): Html =>
   h.block(
     DeleteDialogBinding.embedView({
       slotId: model.deleteDialog.id,

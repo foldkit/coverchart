@@ -15,9 +15,7 @@ export const SectionKind = Schema.Literals([
   'Instrumental',
 ])
 
-export type SectionKind = typeof SectionKind.Type
-
-export const SECTION_KINDS: ReadonlyArray<SectionKind> = [
+export const SECTION_KINDS: ReadonlyArray<typeof SectionKind.Type> = [
   'Intro',
   'Verse',
   'PreChorus',
@@ -28,7 +26,7 @@ export const SECTION_KINDS: ReadonlyArray<SectionKind> = [
   'Instrumental',
 ]
 
-export const kindLabel = (kind: SectionKind): string =>
+export const kindLabel = (kind: typeof SectionKind.Type): string =>
   kind === 'PreChorus' ? 'Pre-Chorus' : kind
 
 export const Section = Schema.Struct({
@@ -37,15 +35,16 @@ export const Section = Schema.Struct({
   lines: Schema.Array(LyricLine),
 })
 
-export type Section = typeof Section.Type
-
-export const empty = (id: string, kind: SectionKind): Section => ({
+export const empty = (
+  id: string,
+  kind: typeof SectionKind.Type,
+): typeof Section.Type => ({
   id,
   kind,
   lines: [],
 })
 
-export const lyricsText = (section: Section): string =>
+export const lyricsText = (section: typeof Section.Type): string =>
   pipe(
     section.lines,
     Array.map(({ lyric }) => lyric),
@@ -57,7 +56,10 @@ const draftLines = (draft: string): ReadonlyArray<string> => draft.split('\n')
 const lineIdAt = (sectionId: string, index: number): string =>
   `${sectionId}:${String(index)}`
 
-export const replaceLyrics = (section: Section, draft: string): Section => {
+export const replaceLyrics = (
+  section: typeof Section.Type,
+  draft: string,
+): typeof Section.Type => {
   const lines = pipe(
     draftLines(draft),
     Array.map((lyric, index) =>
@@ -75,46 +77,46 @@ export const replaceLyrics = (section: Section, draft: string): Section => {
 }
 
 export const updateLine = (
-  section: Section,
+  section: typeof Section.Type,
   lineId: string,
-  f: (line: Line.LyricLine) => Line.LyricLine,
-): Section =>
+  f: (line: typeof Line.LyricLine.Type) => typeof Line.LyricLine.Type,
+): typeof Section.Type =>
   modifyFields(section, {
     lines: Array.map(line => (line.id === lineId ? f(line) : line)),
   })
 
 export const findLine = (
-  section: Section,
+  section: typeof Section.Type,
   lineId: string,
-): Option.Option<Line.LyricLine> =>
+): Option.Option<typeof Line.LyricLine.Type> =>
   Array.findFirst(section.lines, ({ id }) => id === lineId)
 
-const markCount = (section: Section): number =>
+const markCount = (section: typeof Section.Type): number =>
   pipe(
     section.lines,
     Array.flatMap(({ marks }) => marks),
     Array.length,
   )
 
-export const duplicateIdCount = (section: Section): number =>
+export const duplicateIdCount = (section: typeof Section.Type): number =>
   1 + section.lines.length + markCount(section)
 
 type DuplicateAcc = Readonly<{
-  lines: ReadonlyArray<Line.LyricLine>
+  lines: ReadonlyArray<typeof Line.LyricLine.Type>
   remainingIds: ReadonlyArray<string>
 }>
 
 const duplicateMarks = (
-  marks: ReadonlyArray<Line.ChordMark>,
+  marks: ReadonlyArray<typeof Line.ChordMark.Type>,
   remainingIds: ReadonlyArray<string>,
 ): Readonly<{
-  marks: ReadonlyArray<Line.ChordMark>
+  marks: ReadonlyArray<typeof Line.ChordMark.Type>
   remainingIds: ReadonlyArray<string>
 }> =>
   Array.reduce(
     marks,
     {
-      marks: Array.empty<Line.ChordMark>(),
+      marks: Array.empty<typeof Line.ChordMark.Type>(),
       remainingIds,
     },
     (acc, mark) =>
@@ -128,9 +130,9 @@ const duplicateMarks = (
   )
 
 export const duplicate = (
-  section: Section,
+  section: typeof Section.Type,
   ids: ReadonlyArray<string>,
-): Option.Option<Section> =>
+): Option.Option<typeof Section.Type> =>
   Option.map(Array.head(ids), sectionId => {
     const afterSection = Array.drop(ids, 1)
     const duplicateInitial: DuplicateAcc = {
@@ -166,10 +168,10 @@ export const duplicate = (
   })
 
 export const reorder = (
-  sections: ReadonlyArray<Section>,
+  sections: ReadonlyArray<typeof Section.Type>,
   itemId: string,
   toIndex: number,
-): ReadonlyArray<Section> =>
+): ReadonlyArray<typeof Section.Type> =>
   pipe(
     Array.findFirstIndex(sections, ({ id }) => id === itemId),
     Option.flatMap(fromIndex =>

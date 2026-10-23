@@ -4,7 +4,7 @@
 
 @custom-variant hover {
   @media (hover: hover) {
-    &:hover:not(:where(.is-dragging *, .is-dragging)) {
+    &:hover:not(:where(body:has(.is-dragging) *)) {
       @slot;
     }
   }
@@ -20,8 +20,8 @@
     color-scheme: dark;
   }
 
-  .is-dragging,
-  .is-dragging * {
+  body:has(.is-dragging),
+  body:has(.is-dragging) * {
     cursor: grabbing !important;
   }
 }

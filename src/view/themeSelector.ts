@@ -2,12 +2,14 @@ import clsx from 'clsx'
 import { Option } from 'effect'
 import type { Html } from 'foldkit/html'
 
+import { Button } from '@foldkit/ui'
+
 import type { ApplicationViewBuilder } from '../composition'
 import { Message, type ThemePreference } from '../message'
 import { computer, moon, sun } from './icon'
 
 export const themeSelector = (
-  maybeActivePreference: Option.Option<ThemePreference>,
+  maybeActivePreference: Option.Option<typeof ThemePreference.Type>,
   h: ApplicationViewBuilder,
 ): Html =>
   h.div(
@@ -44,8 +46,8 @@ export const themeSelector = (
   )
 
 const themeSelectorButton = (
-  preference: ThemePreference,
-  maybeActivePreference: Option.Option<ThemePreference>,
+  preference: typeof ThemePreference.Type,
+  maybeActivePreference: Option.Option<typeof ThemePreference.Type>,
   icon: Html,
   label: string,
   h: ApplicationViewBuilder,
@@ -55,20 +57,27 @@ const themeSelectorButton = (
     activePreference => activePreference === preference,
   )
 
-  return h.button(
-    [
-      h.AriaPressed(isActive.toString()),
-      h.Class(
-        clsx(
-          'cursor-pointer rounded-md p-2 transition',
-          isActive
-            ? 'bg-stone-300 text-stone-900 dark:bg-stone-600 dark:text-white'
-            : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200',
+  return Button.view(
+    {
+      onClick: Message.SelectedThemePreference({ preference }),
+      toView: attributes =>
+        h.button(
+          [
+            ...attributes.button,
+            h.AriaPressed(isActive.toString()),
+            h.Class(
+              clsx(
+                'cursor-pointer rounded-md p-2 transition',
+                isActive
+                  ? 'bg-stone-300 text-stone-900 dark:bg-stone-600 dark:text-white'
+                  : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200',
+              ),
+            ),
+            h.AriaLabel(label),
+          ],
+          [icon],
         ),
-      ),
-      h.AriaLabel(label),
-      h.OnClick(Message.SelectedThemePreference({ preference })),
-    ],
-    [icon],
+    },
+    h,
   )
 }

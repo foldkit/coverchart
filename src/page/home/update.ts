@@ -17,11 +17,10 @@ export const update = HomeComposition.makeUpdate((model, message) =>
     }),
 
     ClickedDeleteSong: ({ songId }) =>
-      Update.combineSteps(
+      DeleteDialogBinding.requestOpen()(
         modifyFields(model, {
           maybePendingDeleteSongId: () => Option.some(songId),
         }),
-        [DeleteDialogBinding.requestOpen()],
       ),
 
     ClickedConfirmDelete: () =>

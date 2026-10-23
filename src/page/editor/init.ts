@@ -1,15 +1,13 @@
 import { Option } from 'effect'
 
-import { Song } from '../../domain'
 import { EditorComposition } from './composition'
-import { EditorMode } from './model'
+import { Announcement, EditorMode } from './model'
 
-export const init = EditorComposition.makeInit((song: Song.Song) => ({
+export const init = EditorComposition.makeInit(() => ({
   model: {
-    song,
     mode: EditorMode.Viewing(),
     paletteDraft: '',
     maybePendingDeleteSectionId: Option.none(),
-    announcement: '',
+    announcement: Announcement.None(),
   },
 }))

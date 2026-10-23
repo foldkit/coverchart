@@ -10,12 +10,12 @@ import {
   CHORD_MENU_EMPTY,
   CHORD_MENU_ID,
 } from '../../constant'
-import { Line, Section, Song } from '../../domain'
+import { placeChord } from './chordPlacement'
 import { GenerateEditorIds } from './command'
 import { EditorDefinition } from './definition'
 import { AddSectionMenuBlock, ChordMenuBlock } from './menu'
 import { IdRequest, OutMessage } from './message'
-import { EditorMode } from './model'
+import { Announcement, EditorMode } from './model'
 
 const foldAddSectionMenuOutMessage = EditorDefinition.makeOutMessageFold(
   AddSectionMenuBlock,
@@ -42,80 +42,15 @@ export const AddSectionMenuBinding = EditorDefinition.makeBinding(
   },
 ).withOutMessagePolicy({ fold: foldAddSectionMenuOutMessage })
 
-const followChordMenuSelection = (item: string) =>
-  EditorDefinition.makeStep(model =>
-    EditorMode.match(model.mode, {
-      Viewing: () => ({ model }),
-      EditingLyrics: () => ({ model }),
-      PlacingChord: placing => {
-        if (item === CHORD_MENU_EMPTY) {
-          return {
-            model: modifyFields(model, { mode: () => EditorMode.Viewing() }),
-          }
-        }
-
-        const name = item === CHORD_MENU_CLEAR ? '' : item
-
-        if (name === '') {
-          return Option.match(placing.maybeMarkId, {
-            onNone: () => ({
-              model: modifyFields(model, { mode: () => EditorMode.Viewing() }),
-            }),
-            onSome: markId => {
-              const song = Song.updateLine(model.song, placing.lineId, line =>
-                Line.removeMark(line, markId),
-              )
-              return {
-                model: modifyFields(model, {
-                  song: () => song,
-                  mode: () => EditorMode.Viewing(),
-                }),
-                outMessage: OutMessage.UpdatedSong({ song }),
-              }
-            },
-          })
-        }
-
-        return Option.match(placing.maybeMarkId, {
-          onSome: markId => {
-            const song = Song.addChord(
-              Song.updateLine(model.song, placing.lineId, line =>
-                Line.updateMarkName(line, markId, name),
-              ),
-              name,
-            )
-            return {
-              model: modifyFields(model, {
-                song: () => song,
-                mode: () => EditorMode.Viewing(),
-              }),
-              outMessage: OutMessage.UpdatedSong({ song }),
-            }
-          },
-          onNone: () => ({
-            model: modifyFields(model, {
-              song: () => Song.addChord(model.song, name),
-            }),
-            commands: [
-              GenerateEditorIds({
-                count: 1,
-                request: IdRequest.NewMark({
-                  lineId: placing.lineId,
-                  at: placing.at,
-                  name,
-                }),
-              }),
-            ],
-          }),
-        })
-      },
-    }),
-  )
-
 const foldChordMenuOutMessage = EditorDefinition.makeOutMessageFold(
   ChordMenuBlock,
   {
-    Selected: ({ value }) => followChordMenuSelection(value),
+    Selected: ({ value }) =>
+      value === CHORD_MENU_EMPTY
+        ? EditorDefinition.makeFieldsStep(() => ({
+            mode: () => EditorMode.Viewing(),
+          }))
+        : placeChord(value === CHORD_MENU_CLEAR ? '' : value),
     Closed: () =>
       EditorDefinition.makeStep(model => ({
         model:
@@ -134,28 +69,18 @@ export const ChordMenuBinding = EditorDefinition.makeBinding(ChordMenuBlock, {
 const foldDragAndDropOutMessage = EditorDefinition.makeOutMessageFold(
   DragAndDropBlock,
   {
-    Reordered:
-      ({ itemId, toIndex }) =>
-      model => {
-        const song = Song.reorderSections(model.song, itemId, toIndex)
-        const kind = Option.match(Song.findSection(song, itemId), {
-          onNone: () => 'Section',
-          onSome: section => Section.kindLabel(section.kind),
-        })
-        return {
-          model: modifyFields(model, {
-            song: () => song,
-            announcement: () =>
-              `${kind} moved to position ${globalThis.String(toIndex + 1)}.`,
-          }),
-          outMessage: OutMessage.UpdatedSong({ song }),
-        }
-      },
-    Cancelled: () => model => ({
-      model: modifyFields(model, {
-        announcement: () => 'Section move cancelled.',
-      }),
-    }),
+    Reordered: ({ itemId, toIndex }) =>
+      EditorDefinition.makeStep(model => ({
+        model: modifyFields(model, {
+          announcement: () =>
+            Announcement.Reordered({ sectionId: itemId, toIndex }),
+        }),
+        outMessage: OutMessage.ReorderedSection({ sectionId: itemId, toIndex }),
+      })),
+    Cancelled: () =>
+      EditorDefinition.makeFieldsStep(() => ({
+        announcement: () => Announcement.Cancelled(),
+      })),
   },
 )
 

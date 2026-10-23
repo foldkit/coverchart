@@ -1,8 +1,5 @@
-import clsx from 'clsx'
 import { Match, Option } from 'effect'
 import type { Html } from 'foldkit/html'
-
-import { DragAndDrop } from '@foldkit/ui'
 
 import {
   ApplicationComposition,
@@ -32,7 +29,7 @@ const descriptionView = (
       ),
   })
 
-const toastView = (model: Model, h: ApplicationViewBuilder): Html =>
+const toastView = (model: typeof Model.Type, h: ApplicationViewBuilder): Html =>
   h.block(
     ToastBinding.embedView({
       slotId: 'app-toast',
@@ -81,7 +78,10 @@ const toastView = (model: Model, h: ApplicationViewBuilder): Html =>
     }),
   )
 
-const homePageView = (model: Model, h: ApplicationViewBuilder): Html =>
+const homePageView = (
+  model: typeof Model.Type,
+  h: ApplicationViewBuilder,
+): Html =>
   h.block(
     HomeBinding.embedView({
       slotId: 'home',
@@ -90,11 +90,41 @@ const homePageView = (model: Model, h: ApplicationViewBuilder): Html =>
     }),
   )
 
-const editorPageView = (model: Model, h: ApplicationViewBuilder): Html =>
-  h.block(EditorBinding.embedView({ slotId: 'editor', model: model.editor }))
+const editorPageView = (
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
+  h: ApplicationViewBuilder,
+): Html =>
+  Option.match(model.maybeEditorInstance, {
+    onNone: () => h.empty,
+    onSome: instance =>
+      h.block(
+        EditorBinding.embedView({
+          key: instance.songId,
+          slotId: instance.songId,
+          model: instance.model,
+          viewInputs: { song },
+        }),
+      ),
+  })
 
-const playPageView = (model: Model, h: ApplicationViewBuilder): Html =>
-  h.block(PlayBinding.embedView({ slotId: 'play', model: model.play }))
+const playPageView = (
+  model: typeof Model.Type,
+  song: typeof Song.Song.Type,
+  h: ApplicationViewBuilder,
+): Html =>
+  Option.match(model.maybePlayInstance, {
+    onNone: () => h.empty,
+    onSome: instance =>
+      h.block(
+        PlayBinding.embedView({
+          key: instance.songId,
+          slotId: instance.songId,
+          model: instance.model,
+          viewInputs: { song },
+        }),
+      ),
+  })
 
 const missingSongView = (h: ApplicationViewBuilder): Html =>
   h.main(
@@ -113,17 +143,21 @@ const missingSongView = (h: ApplicationViewBuilder): Html =>
   )
 
 const songPageView = (
-  model: Model,
+  model: typeof Model.Type,
   songId: string,
-  pageView: (model: Model, h: ApplicationViewBuilder) => Html,
+  pageView: (
+    model: typeof Model.Type,
+    song: typeof Song.Song.Type,
+    h: ApplicationViewBuilder,
+  ) => Html,
   h: ApplicationViewBuilder,
 ): Html =>
   Option.match(Song.findById(model.songs, songId), {
     onNone: () => missingSongView(h),
-    onSome: () => pageView(model, h),
+    onSome: song => pageView(model, song, h),
   })
 
-const documentTitle = (model: Model): string =>
+const documentTitle = (model: typeof Model.Type): string =>
   Match.value(model.route).pipe(
     Match.tagsExhaustive({
       Home: () => 'Coverchart',
@@ -141,7 +175,10 @@ const documentTitle = (model: Model): string =>
     }),
   )
 
-const routeBodyView = (model: Model, h: ApplicationViewBuilder): Html =>
+const routeBodyView = (
+  model: typeof Model.Type,
+  h: ApplicationViewBuilder,
+): Html =>
   Match.value(model.route).pipe(
     Match.tagsExhaustive({
       Home: () => homePageView(model, h),
@@ -154,15 +191,7 @@ const routeBodyView = (model: Model, h: ApplicationViewBuilder): Html =>
 export const view = ApplicationComposition.makeView((model, h) => ({
   title: documentTitle(model),
   body: h.div(
-    [
-      h.Class(
-        clsx(className.pageShell, {
-          'is-dragging': DragAndDrop.isDragging(
-            model.editor.sectionDragAndDrop,
-          ),
-        }),
-      ),
-    ],
+    [h.Class(className.pageShell)],
     [
       h.div(
         [h.Class(className.pageInner)],

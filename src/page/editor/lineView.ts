@@ -10,16 +10,16 @@ import { Line } from '../../domain'
 import * as className from '../../view/className'
 import { ChordMenuBinding, type EditorViewBuilder } from './composition'
 import { Message } from './message'
-import type { Model, PlacingChord } from './model'
+import type { EditorMode, Model } from './model'
 
-const MENU_ANCHOR: AnchorConfig = {
+const MENU_ANCHOR: typeof AnchorConfig.Type = {
   placement: 'bottom-start',
   gap: 4,
   padding: 8,
 }
 
 const isPlacingOnWord = (
-  maybePlacing: Option.Option<PlacingChord>,
+  maybePlacing: Option.Option<typeof EditorMode.PlacingChord.Type>,
   lineId: string,
   at: number,
 ): boolean =>
@@ -39,9 +39,9 @@ const chordMenuItems = (
   })
 
 const chordSlotView = (
-  line: Line.LyricLine,
+  line: typeof Line.LyricLine.Type,
   word: Line.Word,
-  maybePlacing: Option.Option<PlacingChord>,
+  maybePlacing: Option.Option<typeof EditorMode.PlacingChord.Type>,
   h: EditorViewBuilder,
 ): Html => {
   if (isPlacingOnWord(maybePlacing, line.id, word.start)) {
@@ -81,7 +81,7 @@ const chordSlotView = (
 }
 
 const wordButtonView = (
-  line: Line.LyricLine,
+  line: typeof Line.LyricLine.Type,
   word: Line.Word,
   h: EditorViewBuilder,
 ): Html =>
@@ -105,7 +105,7 @@ const chordMenuView = (
   word: Line.Word,
   chords: ReadonlyArray<string>,
   hasMark: boolean,
-  chordMenu: Model['chordMenu'],
+  chordMenu: (typeof Model.Type)['chordMenu'],
   h: EditorViewBuilder,
 ): Html =>
   h.block(
@@ -146,10 +146,10 @@ const chordMenuView = (
   )
 
 export const lineView = (
-  line: Line.LyricLine,
-  maybePlacing: Option.Option<PlacingChord>,
+  line: typeof Line.LyricLine.Type,
+  maybePlacing: Option.Option<typeof EditorMode.PlacingChord.Type>,
   chords: ReadonlyArray<string>,
-  chordMenu: Model['chordMenu'],
+  chordMenu: (typeof Model.Type)['chordMenu'],
   h: EditorViewBuilder,
 ): Html =>
   Array.match(Line.words(line.lyric), {
@@ -188,23 +188,22 @@ export const lineView = (
       ),
   })
 
-export const maybePlacingChord = (model: Model): Option.Option<PlacingChord> =>
+export const maybePlacingChord = (
+  model: typeof Model.Type,
+): Option.Option<typeof EditorMode.PlacingChord.Type> =>
   Match.value(model.mode).pipe(
     Match.tag('PlacingChord', placing => placing),
     Match.option,
   )
 
-export const isEditingSection = (model: Model, sectionId: string): boolean =>
+export const isEditingSection = (
+  model: typeof Model.Type,
+  sectionId: string,
+): boolean =>
   Option.exists(
     Match.value(model.mode).pipe(
       Match.tag('EditingLyrics', editing => editing),
       Match.option,
     ),
     editing => editing.sectionId === sectionId,
-  )
-
-export const lyricsDraft = (model: Model): string =>
-  Match.value(model.mode).pipe(
-    Match.tag('EditingLyrics', ({ draft }) => draft),
-    Match.orElse(() => ''),
   )

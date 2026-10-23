@@ -1,4 +1,4 @@
-import { Crypto, Effect, Layer, Match, Schema } from 'effect'
+import { Array, Crypto, Effect, Layer, Match, Schema } from 'effect'
 import { KeyValueStore } from 'effect/persistence'
 import { load, pushUrl } from 'foldkit/navigation'
 
@@ -16,8 +16,6 @@ import { subscriptions } from './subscription'
 export const SavedLibrary = Schema.Struct({
   songs: Schema.Array(Song.Song),
 })
-
-export type SavedLibrary = typeof SavedLibrary.Type
 
 export const SavedLibraryJsonString = Schema.fromJsonString(
   Schema.toCodecJson(SavedLibrary),
@@ -50,11 +48,16 @@ export const SaveLibrary = ApplicationDefinition.makeCommand('SaveLibrary', {
       store
         .set(STORAGE_KEY, Schema.encodeSync(SavedLibraryJsonString)({ songs }))
         .pipe(
-          Effect.as(Message.SucceededSaveLibrary()),
+          Effect.as(
+            Message.SucceededSaveLibrary({
+              songIds: Array.map(songs, song => song.id),
+            }),
+          ),
           Effect.catch(() =>
             Effect.succeed(
               Message.FailedSaveLibrary({
                 error: 'Could not save your songs.',
+                songIds: Array.map(songs, song => song.id),
               }),
             ),
           ),

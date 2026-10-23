@@ -31,7 +31,3 @@ export const LYRICS_TEXTAREA_ID = 'section-lyrics'
 export const MAX_CAPO = 12
 
 export const MAX_TRANSPOSE = 11
-
-export const PLACEHOLDER_SONG_ID = 'pending-song'
-
-export const PLACEHOLDER_SECTION_ID = 'pending-section'

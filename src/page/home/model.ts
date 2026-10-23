@@ -7,5 +7,3 @@ export const Model = Schema.Struct({
   deleteDialog: DialogBlock.Model,
   maybePendingDeleteSongId: Schema.Option(Schema.String),
 })
-
-export type Model = typeof Model.Type

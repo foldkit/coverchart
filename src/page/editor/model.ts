@@ -3,28 +3,29 @@ import { defineTaggedUnion } from 'foldkit/schema'
 
 import { DialogBlock, DragAndDropBlock } from '@foldkit/ui'
 
-import { PLACEHOLDER_SECTION_ID, PLACEHOLDER_SONG_ID } from '../../constant'
-import { Line, Song } from '../../domain'
+import { Line } from '../../domain'
 import { AddSectionMenuBlock, ChordMenuBlock } from './menu'
 
 export const EditorMode = defineTaggedUnion({
   Viewing: {},
   EditingLyrics: {
     sectionId: Schema.String,
-    draft: Schema.String,
     backupLines: Schema.Array(Line.LyricLine),
   },
   PlacingChord: {
     lineId: Schema.String,
+    expectedLyric: Schema.String,
     at: Schema.Number,
     maybeMarkId: Schema.Option(Schema.String),
   },
 })
-export type PlacingChord = typeof EditorMode.PlacingChord.Type
-export type EditorMode = typeof EditorMode.Type
+export const Announcement = defineTaggedUnion({
+  None: {},
+  Reordered: { sectionId: Schema.String, toIndex: Schema.Number },
+  Cancelled: {},
+})
 
 export const Model = Schema.Struct({
-  song: Song.Song,
   mode: EditorMode,
   paletteDraft: Schema.String,
   addSectionMenu: AddSectionMenuBlock.Model,
@@ -32,12 +33,5 @@ export const Model = Schema.Struct({
   sectionDragAndDrop: DragAndDropBlock.Model,
   deleteSectionDialog: DialogBlock.Model,
   maybePendingDeleteSectionId: Schema.Option(Schema.String),
-  announcement: Schema.String,
+  announcement: Announcement,
 })
-
-export type Model = typeof Model.Type
-
-export const placeholderSong = Song.create(
-  PLACEHOLDER_SONG_ID,
-  PLACEHOLDER_SECTION_ID,
-)

@@ -1,3 +1,4 @@
+import { Option } from 'effect'
 import {
   Command,
   expectOutMessage,
@@ -10,10 +11,11 @@ import { modifyFields } from 'foldkit/struct'
 import { describe, expect, test } from 'vitest'
 
 import { Line, Song } from '../../domain'
+import { PlayBlock } from './block'
 import { CopyChart } from './command'
 import { init } from './init'
 import { Message, OutMessage } from './message'
-import { update } from './update'
+import { update as contextualUpdate } from './update'
 
 const base = Song.updateSection(
   Song.create('song-1', 'section-1'),
@@ -30,7 +32,11 @@ const base = Song.updateSection(
     }),
 )
 
-const playInit = init(base)
+const playInit = init()
+const update = (
+  model: typeof PlayBlock.Model.Type,
+  message: typeof PlayBlock.Message.Type,
+) => contextualUpdate(model, message, Option.some(base))
 
 describe('play view preferences', () => {
   test('transpose up changes display without rewriting stored chord names', () => {
@@ -39,15 +45,9 @@ describe('play view preferences', () => {
       given(playInit.model),
       message(Message.ClickedTransposeUp()),
       model(current => {
-        expect(current.song.transpose).toBe(1)
-        expect(current.song.sections[0]?.lines[0]?.marks[0]?.name).toBe('G')
-        expect(Song.toChartText(current.song)).toContain('G#')
+        expect(current).toBe(playInit.model)
       }),
-      expectOutMessage(
-        OutMessage.UpdatedSong({
-          song: modifyFields(base, { transpose: () => 1 }),
-        }),
-      ),
+      expectOutMessage(OutMessage.AdjustedTranspose({ by: 1 })),
     )
   })
 
@@ -57,12 +57,9 @@ describe('play view preferences', () => {
       given(playInit.model),
       message(Message.ClickedCapoUp()),
       model(current => {
-        expect(current.song.capo).toBe(1)
-        expect(Song.toChartText(current.song)).toContain('F#')
+        expect(current).toBe(playInit.model)
       }),
-      expectOutMessage(
-        OutMessage.UpdatedSong({ song: modifyFields(base, { capo: () => 1 }) }),
-      ),
+      expectOutMessage(OutMessage.AdjustedCapo({ by: 1 })),
     )
   })
 

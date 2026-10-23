@@ -10,4 +10,6 @@ subtree_prompted: true
 
 ## Project Notes
 
-Coverchart is a multi-page song chart editor (home library, editor, play view) with Submodels, OutMessage, localStorage persistence, and theme preference.
+Coverchart is a multi-page song chart editor (home library, editor, play view) with Blocks, OutMessage, localStorage persistence, and theme preference.
+
+The root Model owns the canonical song library. Editor and Play receive a song through view inputs and Binding delivery context. Their keyed instances hold interaction state, not synchronized song copies. Children report domain changes through OutMessages; the parent applies them to the current canonical song and returns persistence Commands. Preserve the editor's intentional lyrics undo snapshot and in-flight placement guards.

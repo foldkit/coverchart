@@ -2,8 +2,7 @@ import { Match, Option } from 'effect'
 import { Url } from 'foldkit/url'
 
 import { ApplyTheme } from './command'
-import { ApplicationComposition } from './composition'
-import { PLACEHOLDER_SECTION_ID, PLACEHOLDER_SONG_ID } from './constant'
+import { ApplicationComposition, initSongPages } from './composition'
 import { Song } from './domain'
 import type { Flags } from './flags'
 import { ThemePreference } from './message'
@@ -11,7 +10,7 @@ import { urlToApplicationRoute } from './route'
 import { resolveTheme } from './theme'
 
 export const init = ApplicationComposition.makeInit(
-  (flags: Flags, url: Url) => {
+  (flags: typeof Flags.Type, url: typeof Url.Type) => {
     const route = urlToApplicationRoute(url)
     const songs = Option.match(flags.maybeSavedLibrary, {
       onNone: () => [],
@@ -22,10 +21,7 @@ export const init = ApplicationComposition.makeInit(
       Match.tag('SongPlay', ({ songId }) => Song.findById(songs, songId)),
       Match.orElse(() => Option.none()),
     )
-    const currentSong = Option.getOrElse(maybeCurrentSong, () =>
-      Song.create(PLACEHOLDER_SONG_ID, PLACEHOLDER_SECTION_ID),
-    )
-    const themePreference: ThemePreference = Option.getOrElse(
+    const themePreference: typeof ThemePreference.Type = Option.getOrElse(
       flags.maybeThemePreference,
       () => 'System',
     )
@@ -38,9 +34,12 @@ export const init = ApplicationComposition.makeInit(
         maybePendingEditSongId: Option.none(),
         maybeThemePreference: Option.some(themePreference),
         systemTheme: flags.systemTheme,
-        resolvedTheme,
+        maybeEditorInstance: Option.none(),
+        maybePlayInstance: Option.none(),
       },
-      childInitContext: currentSong,
+      steps: Option.toArray(
+        Option.map(maybeCurrentSong, song => initSongPages(song.id)),
+      ),
       commands: [ApplyTheme({ theme: resolvedTheme })],
     }
   },
