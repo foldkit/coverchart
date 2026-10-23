@@ -8,8 +8,6 @@ export const Message = defineMessageUnion({
   ClickedConfirmDelete: {},
 })
 
-// OUT MESSAGE
-
 export const OutMessage = defineMessageUnion({
   RequestedNewSong: {},
   ConfirmedDeleteSong: { songId: Schema.String },

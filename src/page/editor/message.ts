@@ -36,8 +36,6 @@ export const Message = defineMessageUnion({
   },
 })
 
-// OUT MESSAGE
-
 export const OutMessage = defineMessageUnion({
   UpdatedTitle: { value: Schema.String },
   UpdatedArtist: { value: Schema.String },

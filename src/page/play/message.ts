@@ -11,8 +11,6 @@ export const Message = defineMessageUnion({
   FailedCopyChart: { error: Schema.String },
 })
 
-// OUT MESSAGE
-
 export const OutMessage = defineMessageUnion({
   AdjustedTranspose: { by: Schema.Number },
   AdjustedCapo: { by: Schema.Number },
