@@ -1,19 +1,11 @@
-import { Option, Schema as S } from 'effect'
+import { Schema } from 'effect'
 
-import { Dialog } from '@foldkit/ui'
+import { DialogBlock } from '@foldkit/ui'
 
-export const Model = S.Struct({
-  searchQuery: S.String,
-  deleteDialog: Dialog.Model,
-  maybePendingDeleteSongId: S.Option(S.String),
+export const Model = Schema.Struct({
+  searchQuery: Schema.String,
+  deleteDialog: DialogBlock.Model,
+  maybePendingDeleteSongId: Schema.Option(Schema.String),
 })
 
 export type Model = typeof Model.Type
-
-export const init = () => ({
-  model: {
-    searchQuery: '',
-    deleteDialog: Dialog.init({ id: 'delete-song-dialog' }),
-    maybePendingDeleteSongId: Option.none(),
-  },
-})

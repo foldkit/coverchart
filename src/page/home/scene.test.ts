@@ -2,7 +2,7 @@ import { expect, given, role, scene, withViewInputs } from 'foldkit/scene'
 import { describe, test } from 'vitest'
 
 import { Song } from '../../domain'
-import { init } from './model'
+import { init } from './init'
 import { update } from './update'
 import { view } from './view'
 

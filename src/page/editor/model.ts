@@ -1,78 +1,43 @@
-import { Option, Schema as S } from 'effect'
-import { ts } from 'foldkit/schema'
-import { evo } from 'foldkit/struct'
+import { Schema } from 'effect'
+import { defineTaggedUnion } from 'foldkit/schema'
 
-import { Dialog, DragAndDrop, Menu } from '@foldkit/ui'
+import { DialogBlock, DragAndDropBlock } from '@foldkit/ui'
 
-import {
-  CHORD_MENU_ID,
-  PLACEHOLDER_SECTION_ID,
-  PLACEHOLDER_SONG_ID,
-} from '../../constant'
+import { PLACEHOLDER_SECTION_ID, PLACEHOLDER_SONG_ID } from '../../constant'
 import { Line, Song } from '../../domain'
+import { AddSectionMenuBlock, ChordMenuBlock } from './menu'
 
-export const Viewing = ts('Viewing')
-export const EditingLyrics = ts('EditingLyrics', {
-  sectionId: S.String,
-  draft: S.String,
-  backupLines: S.Array(Line.LyricLine),
+export const EditorMode = defineTaggedUnion({
+  Viewing: {},
+  EditingLyrics: {
+    sectionId: Schema.String,
+    draft: Schema.String,
+    backupLines: Schema.Array(Line.LyricLine),
+  },
+  PlacingChord: {
+    lineId: Schema.String,
+    at: Schema.Number,
+    maybeMarkId: Schema.Option(Schema.String),
+  },
 })
-export const PlacingChord = ts('PlacingChord', {
-  lineId: S.String,
-  at: S.Number,
-  maybeMarkId: S.Option(S.String),
-})
-
-export const EditorMode = S.Union([Viewing, EditingLyrics, PlacingChord])
-
-export type Viewing = typeof Viewing.Type
-export type EditingLyrics = typeof EditingLyrics.Type
-export type PlacingChord = typeof PlacingChord.Type
+export type PlacingChord = typeof EditorMode.PlacingChord.Type
 export type EditorMode = typeof EditorMode.Type
 
-export const Model = S.Struct({
+export const Model = Schema.Struct({
   song: Song.Song,
   mode: EditorMode,
-  paletteDraft: S.String,
-  addSectionMenu: Menu.Model,
-  chordMenu: Menu.Model,
-  sectionDragAndDrop: DragAndDrop.Model,
-  deleteSectionDialog: Dialog.Model,
-  maybePendingDeleteSectionId: S.Option(S.String),
-  announcement: S.String,
+  paletteDraft: Schema.String,
+  addSectionMenu: AddSectionMenuBlock.Model,
+  chordMenu: ChordMenuBlock.Model,
+  sectionDragAndDrop: DragAndDropBlock.Model,
+  deleteSectionDialog: DialogBlock.Model,
+  maybePendingDeleteSectionId: Schema.Option(Schema.String),
+  announcement: Schema.String,
 })
 
 export type Model = typeof Model.Type
-
-export const init = (song: Song.Song) => ({
-  model: {
-    song,
-    mode: Viewing(),
-    paletteDraft: '',
-    addSectionMenu: Menu.init({ id: 'add-section-menu' }),
-    chordMenu: Menu.init({ id: CHORD_MENU_ID }),
-    sectionDragAndDrop: DragAndDrop.init({
-      id: 'section-dnd',
-      orientation: 'Vertical',
-    }),
-    deleteSectionDialog: Dialog.init({ id: 'delete-section-dialog' }),
-    maybePendingDeleteSectionId: Option.none(),
-    announcement: '',
-  },
-})
 
 export const placeholderSong = Song.create(
   PLACEHOLDER_SONG_ID,
   PLACEHOLDER_SECTION_ID,
 )
-
-export const loadSong = (model: Model, song: Song.Song) =>
-  model.song.id === song.id ? { model } : init(song)
-
-export const abandonSong = (model: Model, songId: string) =>
-  model.song.id === songId ? init(placeholderSong) : { model }
-
-export const syncSong = (model: Model, song: Song.Song) =>
-  model.song.id === song.id
-    ? { model: evo(model, { song: () => song }) }
-    : { model }

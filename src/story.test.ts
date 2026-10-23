@@ -9,26 +9,36 @@ import {
   SaveLibrary,
   SaveThemePreference,
 } from './command'
+import { HomeBinding } from './composition'
 import { Song } from './domain'
 import { Message } from './message'
 import type { Model } from './model'
-import { Editor, Home, Play } from './page'
-import { HomeRoute, songEditRouter } from './route'
-import { Toast } from './toast'
+import { EditorBlock, HomeBlock, PlayBlock } from './page'
+import { ApplicationRoute, songEditRouter } from './route'
+import { ToastBlock } from './toast'
 import { update } from './update'
 
 const emptyModel: Model = {
-  route: HomeRoute(),
+  route: ApplicationRoute.Home(),
   songs: [],
-  home: Home.init().model,
-  editor: Editor.init(Editor.placeholderSong).model,
-  play: Play.init(Play.placeholderSong).model,
-  toast: Toast.init({ id: 'app-toast' }),
+  home: HomeBlock.init().model,
+  editor: EditorBlock.init(Song.create('placeholder-song', 'section-1')).model,
+  play: PlayBlock.init(Song.create('placeholder-song', 'section-1')).model,
+  toast: ToastBlock.init({ id: 'app-toast' }).model,
   maybePendingEditSongId: Option.none(),
   maybeThemePreference: Option.some('System'),
   systemTheme: 'Light',
   resolvedTheme: 'Light',
 }
+
+const emptyHomeView = HomeBlock.makeView((_model, h) => h.empty)
+
+const homeMessage = (message: typeof HomeBlock.Message.Type) =>
+  HomeBinding.embedView({
+    slotId: 'home',
+    model: emptyModel.home,
+    view: emptyHomeView,
+  }).toParentMessage(message)
 
 describe('library', () => {
   test('creating a song saves it and opens the editor', () => {
@@ -39,9 +49,7 @@ describe('library', () => {
     story(
       update,
       given(emptyModel),
-      message(
-        Message.GotHomeMessage({ message: Home.Message.ClickedNewSong() }),
-      ),
+      message(homeMessage(HomeBlock.Message.ClickedNewSong())),
       Command.expectExact(GenerateSongIds()),
       Command.resolve(
         GenerateSongIds,

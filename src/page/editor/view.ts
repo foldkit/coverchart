@@ -1,9 +1,10 @@
 import clsx from 'clsx'
 import { Array, Option, pipe } from 'effect'
-import { Submodel } from 'foldkit'
-import { type Html, type HtmlBuilder, childAttributes } from 'foldkit/html'
+import { type Html, childAttributes } from 'foldkit/html'
 
-import { Button, Dialog, DragAndDrop, Input, Menu } from '@foldkit/ui'
+import { Button, DragAndDrop, Input } from '@foldkit/ui'
+import type { RenderInfo as DragAndDropRenderInfo } from '@foldkit/ui/dragAndDrop'
+import type { AnchorConfig } from '@foldkit/ui/menu'
 
 import {
   ARTIST_INPUT_ID,
@@ -18,6 +19,13 @@ import { homeRouter, songPlayRouter } from '../../route'
 import * as className from '../../view/className'
 import { labeledInput, labeledTextarea } from '../../view/field'
 import {
+  AddSectionMenuBinding,
+  DeleteSectionDialogBinding,
+  EditorComposition,
+  type EditorViewBuilder,
+  SectionDragAndDropBinding,
+} from './composition'
+import {
   isEditingSection,
   lineView,
   lyricsDraft,
@@ -26,15 +34,13 @@ import {
 import { Message } from './message'
 import { Model } from './model'
 
-const AddSectionMenu = Menu.create<Section.SectionKind>()
-
-const MENU_ANCHOR = {
-  placement: 'bottom-start' as const,
+const MENU_ANCHOR: AnchorConfig = {
+  placement: 'bottom-start',
   gap: 4,
   padding: 8,
 }
 
-const metadataView = (song: Song.Song, h: HtmlBuilder<Message>): Html =>
+const metadataView = (song: Song.Song, h: EditorViewBuilder): Html =>
   h.div(
     [h.Class('grid gap-4 sm:grid-cols-3')],
     [
@@ -70,7 +76,7 @@ const metadataView = (song: Song.Song, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-const paletteChipView = (name: string, h: HtmlBuilder<Message>): Html =>
+const paletteChipView = (name: string, h: EditorViewBuilder): Html =>
   h.div(
     [
       h.Class(
@@ -100,7 +106,7 @@ const paletteChipView = (name: string, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-const paletteView = (model: Model, h: HtmlBuilder<Message>): Html =>
+const paletteView = (model: Model, h: EditorViewBuilder): Html =>
   h.div(
     [
       h.Class(
@@ -171,7 +177,7 @@ const paletteView = (model: Model, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-const lyricsEditorView = (draft: string, h: HtmlBuilder<Message>): Html =>
+const lyricsEditorView = (draft: string, h: EditorViewBuilder): Html =>
   h.div(
     [h.Class('flex flex-col gap-3')],
     [
@@ -216,7 +222,7 @@ const lyricsEditorView = (draft: string, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-const emptySectionBodyView = (h: HtmlBuilder<Message>): Html =>
+const emptySectionBodyView = (h: EditorViewBuilder): Html =>
   h.p(
     [h.Class('text-sm text-stone-500 dark:text-stone-400')],
     ['No lyrics yet. Edit lyrics and paste while you listen.'],
@@ -225,7 +231,7 @@ const emptySectionBodyView = (h: HtmlBuilder<Message>): Html =>
 const chordLinesView = (
   section: Section.Section,
   model: Model,
-  h: HtmlBuilder<Message>,
+  h: EditorViewBuilder,
 ): Html =>
   Array.match(section.lines, {
     onEmpty: () => emptySectionBodyView(h),
@@ -253,7 +259,7 @@ const chordLinesView = (
 const sectionBodyView = (
   section: Section.Section,
   model: Model,
-  h: HtmlBuilder<Message>,
+  h: EditorViewBuilder,
 ): Html =>
   isEditingSection(model, section.id)
     ? lyricsEditorView(lyricsDraft(model), h)
@@ -262,7 +268,7 @@ const sectionBodyView = (
 const sectionActionsView = (
   section: Section.Section,
   canRemove: boolean,
-  h: HtmlBuilder<Message>,
+  h: EditorViewBuilder,
 ): Html =>
   h.div(
     [h.Class('flex flex-wrap gap-2')],
@@ -305,7 +311,7 @@ const sectionActionsView = (
     ],
   )
 
-const dragHandleIcon = (h: HtmlBuilder<Message>): Html =>
+const dragHandleIcon = (h: EditorViewBuilder): Html =>
   h.svg(
     [
       h.AriaHidden(true),
@@ -328,23 +334,18 @@ const sectionDragHandleView = (
   model: Model,
   section: Section.Section,
   index: number,
-  h: HtmlBuilder<Message>,
+  render: DragAndDropRenderInfo,
+  h: EditorViewBuilder,
 ): Html =>
   h.div(
     [
       h.Class(className.dragHandle),
       h.AriaLabel(`Reorder ${Section.kindLabel(section.kind)}`),
-      ...DragAndDrop.draggable(
-        {
-          model: model.sectionDragAndDrop,
-          toParentMessage: message =>
-            Message.GotSectionDragAndDropMessage({ message }),
-          itemId: section.id,
-          containerId: SECTIONS_CONTAINER_ID,
-          index,
-        },
-        h,
-      ),
+      ...render.draggable({
+        itemId: section.id,
+        containerId: SECTIONS_CONTAINER_ID,
+        index,
+      }),
     ],
     [dragHandleIcon(h)],
   )
@@ -354,7 +355,8 @@ const sectionView = (
   section: Section.Section,
   index: number,
   canRemove: boolean,
-  h: HtmlBuilder<Message>,
+  render: DragAndDropRenderInfo,
+  h: EditorViewBuilder,
 ): Html => {
   const isThisSectionDragged = Option.exists(
     DragAndDrop.maybeDraggedItemId(model.sectionDragAndDrop),
@@ -381,7 +383,7 @@ const sectionView = (
       ),
     ],
     [
-      sectionDragHandleView(model, section, index, h),
+      sectionDragHandleView(model, section, index, render, h),
       h.div(
         [h.Class('min-w-0 flex-1 p-4')],
         [
@@ -406,7 +408,7 @@ const sectionView = (
   )
 }
 
-const dropPlaceholder = (h: HtmlBuilder<Message>): Html =>
+const dropPlaceholder = (h: EditorViewBuilder): Html =>
   h.keyed('li')('drop-placeholder', [
     h.Class(
       'min-h-24 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950',
@@ -417,25 +419,27 @@ const dropPlaceholder = (h: HtmlBuilder<Message>): Html =>
 const defaultSectionElements = (
   model: Model,
   canRemove: boolean,
-  h: HtmlBuilder<Message>,
+  render: DragAndDropRenderInfo,
+  h: EditorViewBuilder,
 ): ReadonlyArray<Html> =>
   Array.map(model.song.sections, (section, index) =>
-    sectionView(model, section, index, canRemove, h),
+    sectionView(model, section, index, canRemove, render, h),
   )
 
 const previewSectionElements = (
   model: Model,
   canRemove: boolean,
-  h: HtmlBuilder<Message>,
+  render: DragAndDropRenderInfo,
+  h: EditorViewBuilder,
 ): ReadonlyArray<Html> => {
   if (!DragAndDrop.isDragging(model.sectionDragAndDrop)) {
-    return defaultSectionElements(model, canRemove, h)
+    return defaultSectionElements(model, canRemove, render, h)
   }
 
   return Option.match(
     DragAndDrop.maybeDraggedItemId(model.sectionDragAndDrop),
     {
-      onNone: () => defaultSectionElements(model, canRemove, h),
+      onNone: () => defaultSectionElements(model, canRemove, render, h),
       onSome: draggedId => {
         const maybeTarget = DragAndDrop.maybeDropTarget(
           model.sectionDragAndDrop,
@@ -445,7 +449,7 @@ const previewSectionElements = (
           ({ id }) => id !== draggedId,
         )
         const sectionElements = Array.map(visibleSections, (section, index) =>
-          sectionView(model, section, index, canRemove, h),
+          sectionView(model, section, index, canRemove, render, h),
         )
 
         const isTargetList = Option.exists(
@@ -469,7 +473,7 @@ const previewSectionElements = (
           : Option.match(Song.findSection(model.song, draggedId), {
               onNone: () => dropPlaceholder(h),
               onSome: section =>
-                sectionView(model, section, targetIndex, canRemove, h),
+                sectionView(model, section, targetIndex, canRemove, render, h),
             })
 
         return pipe(
@@ -482,128 +486,128 @@ const previewSectionElements = (
   )
 }
 
-const addSectionMenuView = (model: Model, h: HtmlBuilder<Message>): Html =>
+const addSectionMenuView = (model: Model, h: EditorViewBuilder): Html =>
   h.div(
     [h.Class('relative')],
     [
-      h.submodel({
-        slotId: model.addSectionMenu.id,
-        model: model.addSectionMenu,
-        view: AddSectionMenu.view,
-        viewInputs: {
-          anchor: MENU_ANCHOR,
-          items: Section.SECTION_KINDS,
-          itemToConfig: (kind: Section.SectionKind) => ({
-            className:
-              'cursor-pointer px-3 py-2 text-sm text-stone-800 data-[active]:bg-stone-100 dark:text-stone-200 dark:data-[active]:bg-stone-800',
-            content: h.span([], [Section.kindLabel(kind)]),
-          }),
-          buttonContent: h.span([], ['Add section']),
-          buttonAttributes: childAttributes([
-            h.Class(className.secondaryButton),
-          ]),
-          itemsAttributes: childAttributes([
-            h.Class(
-              'z-10 w-44 overflow-hidden rounded-md border border-stone-200 bg-white shadow-lg outline-none dark:border-stone-700 dark:bg-stone-900',
-            ),
-          ]),
-          attributes: childAttributes([h.Class('relative inline-block')]),
-        },
-        toParentMessage: message =>
-          Message.GotAddSectionMenuMessage({ message }),
-      }),
+      h.block(
+        AddSectionMenuBinding.embedView({
+          slotId: model.addSectionMenu.id,
+          model: model.addSectionMenu,
+          viewInputs: {
+            anchor: MENU_ANCHOR,
+            items: Section.SECTION_KINDS,
+            itemToConfig: (kind: Section.SectionKind) => ({
+              className:
+                'cursor-pointer px-3 py-2 text-sm text-stone-800 data-[active]:bg-stone-100 dark:text-stone-200 dark:data-[active]:bg-stone-800',
+              content: h.span([], [Section.kindLabel(kind)]),
+            }),
+            buttonContent: h.span([], ['Add section']),
+            buttonAttributes: childAttributes([
+              h.Class(className.secondaryButton),
+            ]),
+            itemsAttributes: childAttributes([
+              h.Class(
+                'z-10 w-44 overflow-hidden rounded-md border border-stone-200 bg-white shadow-lg outline-none dark:border-stone-700 dark:bg-stone-900',
+              ),
+            ]),
+            attributes: childAttributes([h.Class('relative inline-block')]),
+          },
+        }),
+      ),
     ],
   )
 
-const deleteSectionDialogView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.submodel({
-    slotId: model.deleteSectionDialog.id,
-    model: model.deleteSectionDialog,
-    view: Dialog.view,
-    viewInputs: {
-      toView: render =>
-        h.dialog(
-          [
-            ...render.dialog,
-            h.Class('bg-transparent p-0 open:flex items-center justify-center'),
-          ],
-          render.isVisible
-            ? [
-                h.div([
-                  ...render.backdrop,
-                  h.Class('fixed inset-0 bg-stone-900/40 dark:bg-black/60'),
-                ]),
-                h.div(
-                  [
-                    ...render.panel,
-                    h.Class(
-                      'relative z-10 mx-auto max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-stone-900',
-                    ),
-                  ],
-                  [
-                    h.h2(
-                      [
-                        ...render.title,
-                        h.Class(
-                          'text-lg font-semibold text-stone-900 dark:text-stone-100',
-                        ),
-                      ],
-                      ['Remove this section?'],
-                    ),
-                    h.p(
-                      [
-                        ...render.description,
-                        h.Class(
-                          'mt-2 text-sm text-stone-600 dark:text-stone-400',
-                        ),
-                      ],
-                      ['Lyrics and chords in the section will be deleted.'],
-                    ),
-                    h.div(
-                      [h.Class('mt-6 flex justify-end gap-2')],
-                      [
-                        Button.view(
-                          {
-                            toView: attributes =>
-                              h.button(
-                                [
-                                  ...attributes.button,
-                                  ...render.closeButton,
-                                  h.Class(className.secondaryButton),
-                                ],
-                                ['Cancel'],
-                              ),
-                          },
-                          h,
-                        ),
-                        Button.view(
-                          {
-                            onClick: Message.ClickedConfirmRemoveSection(),
-                            toView: attributes =>
-                              h.button(
-                                [
-                                  ...attributes.button,
-                                  ...render.initialFocus,
-                                  h.Class(className.dangerButton),
-                                ],
-                                ['Remove section'],
-                              ),
-                          },
-                          h,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ]
-            : [],
-        ),
-    },
-    toParentMessage: message =>
-      Message.GotDeleteSectionDialogMessage({ message }),
-  })
+const deleteSectionDialogView = (model: Model, h: EditorViewBuilder): Html =>
+  h.block(
+    DeleteSectionDialogBinding.embedView({
+      slotId: model.deleteSectionDialog.id,
+      model: model.deleteSectionDialog,
+      viewInputs: {
+        toView: render =>
+          h.dialog(
+            [
+              ...render.dialog,
+              h.Class(
+                'bg-transparent p-0 open:flex items-center justify-center',
+              ),
+            ],
+            render.isVisible
+              ? [
+                  h.div([
+                    ...render.backdrop,
+                    h.Class('fixed inset-0 bg-stone-900/40 dark:bg-black/60'),
+                  ]),
+                  h.div(
+                    [
+                      ...render.panel,
+                      h.Class(
+                        'relative z-10 mx-auto max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-stone-900',
+                      ),
+                    ],
+                    [
+                      h.h2(
+                        [
+                          ...render.title,
+                          h.Class(
+                            'text-lg font-semibold text-stone-900 dark:text-stone-100',
+                          ),
+                        ],
+                        ['Remove this section?'],
+                      ),
+                      h.p(
+                        [
+                          ...render.description,
+                          h.Class(
+                            'mt-2 text-sm text-stone-600 dark:text-stone-400',
+                          ),
+                        ],
+                        ['Lyrics and chords in the section will be deleted.'],
+                      ),
+                      h.div(
+                        [h.Class('mt-6 flex justify-end gap-2')],
+                        [
+                          Button.view(
+                            {
+                              toView: attributes =>
+                                h.button(
+                                  [
+                                    ...attributes.button,
+                                    ...render.closeButton,
+                                    h.Class(className.secondaryButton),
+                                  ],
+                                  ['Cancel'],
+                                ),
+                            },
+                            h,
+                          ),
+                          Button.view(
+                            {
+                              onClick: Message.ClickedConfirmRemoveSection(),
+                              toView: attributes =>
+                                h.button(
+                                  [
+                                    ...attributes.button,
+                                    ...render.initialFocus,
+                                    h.Class(className.dangerButton),
+                                  ],
+                                  ['Remove section'],
+                                ),
+                            },
+                            h,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ]
+              : [],
+          ),
+      },
+    }),
+  )
 
-const ghostSectionView = (model: Model, h: HtmlBuilder<Message>): Html =>
+const ghostSectionView = (model: Model, h: EditorViewBuilder): Html =>
   Option.match(
     Option.flatMap(
       DragAndDrop.ghostStyle(model.sectionDragAndDrop),
@@ -635,7 +639,35 @@ const ghostSectionView = (model: Model, h: HtmlBuilder<Message>): Html =>
     },
   )
 
-export const view = Submodel.defineView<Model, Message>((model, h) => {
+const sectionsView = (
+  model: Model,
+  canRemove: boolean,
+  h: EditorViewBuilder,
+): Html =>
+  h.block(
+    SectionDragAndDropBinding.embedView({
+      slotId: model.sectionDragAndDrop.id,
+      model: model.sectionDragAndDrop,
+      viewInputs: {
+        toView: render =>
+          h.div(
+            [],
+            [
+              h.ul(
+                [
+                  h.Class('flex flex-col gap-4'),
+                  ...render.droppable(SECTIONS_CONTAINER_ID, 'Sections'),
+                ],
+                previewSectionElements(model, canRemove, render, h),
+              ),
+              ghostSectionView(model, h),
+            ],
+          ),
+      },
+    }),
+  )
+
+export const view = EditorComposition.makeView((model, h) => {
   const canRemove = Array.match(Array.drop(model.song.sections, 1), {
     onEmpty: () => false,
     onNonEmpty: () => true,
@@ -686,14 +718,7 @@ export const view = Submodel.defineView<Model, Message>((model, h) => {
           addSectionMenuView(model, h),
         ],
       ),
-      h.ul(
-        [
-          h.Class('flex flex-col gap-4'),
-          ...DragAndDrop.droppable(SECTIONS_CONTAINER_ID, 'Sections'),
-        ],
-        previewSectionElements(model, canRemove, h),
-      ),
-      ghostSectionView(model, h),
+      sectionsView(model, canRemove, h),
       h.div(
         [h.Class('sr-only'), h.AriaLive('assertive')],
         [model.announcement],

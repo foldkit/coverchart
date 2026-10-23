@@ -7,25 +7,35 @@ import {
   model,
   story,
 } from 'foldkit/story'
-import { evo } from 'foldkit/struct'
+import { modifyFields } from 'foldkit/struct'
 import { describe, expect, test } from 'vitest'
 
 import { Menu } from '@foldkit/ui'
 
 import { Line, Song } from '../../domain'
 import { GenerateEditorIds } from './command'
-import { Message, NewMarkRequest, OutMessage } from './message'
-import { init } from './model'
+import { ChordMenuBinding } from './composition'
+import { init } from './init'
+import { ChordMenuBlock } from './menu'
+import { IdRequest, Message, OutMessage } from './message'
 import { update } from './update'
 
 const baseSong = Song.create('song-1', 'section-1')
 const song = Song.updateSection(baseSong, 'section-1', section =>
-  evo(section, {
+  modifyFields(section, {
     lines: () => [Line.empty('line-1', 'Hello world')],
   }),
 )
 
 const editorInit = init(song)
+const emptyChordMenuView = ChordMenuBlock.makeView((_model, h) => h.empty)
+
+const chordMenuMessage = (message: typeof ChordMenuBlock.Message.Type) =>
+  ChordMenuBinding.embedView({
+    slotId: 'chord-menu',
+    model: editorInit.model.chordMenu,
+    view: emptyChordMenuView,
+  }).toParentMessage(message)
 
 describe('editor', () => {
   test('updating the title emits the changed song', () => {
@@ -35,7 +45,7 @@ describe('editor', () => {
       message(Message.UpdatedTitle({ value: 'Blackbird' })),
       expectOutMessage(
         OutMessage.UpdatedSong({
-          song: evo(song, { title: () => 'Blackbird' }),
+          song: modifyFields(song, { title: () => 'Blackbird' }),
         }),
       ),
       model(current => {
@@ -66,10 +76,30 @@ describe('editor', () => {
       given(editorInit.model),
       message(Message.ClickedWord({ lineId: 'line-1', at: 0 })),
       expectNoOutMessage(),
-      Command.resolve(Menu.FocusItems, Menu.Message.CompletedFocusItems()),
+      Command.resolve(
+        Menu.test.FocusMenuItems,
+        ChordMenuBlock.Message.CompletedFocusMenuItems(),
+      ),
       model(current => {
         expect(current.mode._tag).toBe('PlacingChord')
         expect(current.chordMenu.isOpen).toBe(true)
+      }),
+    )
+  })
+
+  test('blurring the chord menu stops placing a chord', () => {
+    story(
+      update,
+      given(editorInit.model),
+      message(Message.ClickedWord({ lineId: 'line-1', at: 0 })),
+      Command.resolve(
+        Menu.test.FocusMenuItems,
+        ChordMenuBlock.Message.CompletedFocusMenuItems(),
+      ),
+      message(chordMenuMessage(ChordMenuBlock.Message.BlurredItems())),
+      model(current => {
+        expect(current.mode._tag).toBe('Viewing')
+        expect(current.chordMenu.isOpen).toBe(false)
       }),
     )
   })
@@ -82,21 +112,27 @@ describe('editor', () => {
       message(Message.SubmittedPaletteChord()),
       expectOutMessage(
         OutMessage.UpdatedSong({
-          song: evo(song, { chords: () => ['G'] }),
+          song: modifyFields(song, { chords: () => ['G'] }),
         }),
       ),
       message(Message.ClickedWord({ lineId: 'line-1', at: 0 })),
-      Command.resolve(Menu.FocusItems, Menu.Message.CompletedFocusItems()),
-      message(
-        Message.GotChordMenuMessage({
-          message: Menu.Message.SelectedItem({ index: 0, item: 'G' }),
-        }),
+      Command.resolve(
+        Menu.test.FocusMenuItems,
+        ChordMenuBlock.Message.CompletedFocusMenuItems(),
       ),
-      Command.resolve(Menu.FocusButton, Menu.Message.CompletedFocusButton()),
+      message(
+        chordMenuMessage(
+          ChordMenuBlock.Message.SelectedItem({ index: 0, item: 'G' }),
+        ),
+      ),
+      Command.resolve(
+        Menu.test.FocusMenuButton,
+        ChordMenuBlock.Message.CompletedFocusMenuButton(),
+      ),
       Command.expectExact(
         GenerateEditorIds({
           count: 1,
-          request: NewMarkRequest({
+          request: IdRequest.NewMark({
             lineId: 'line-1',
             at: 0,
             name: 'G',
@@ -107,7 +143,7 @@ describe('editor', () => {
         GenerateEditorIds,
         Message.CompletedGenerateEditorIds({
           ids: ['mark-1'],
-          request: NewMarkRequest({
+          request: IdRequest.NewMark({
             lineId: 'line-1',
             at: 0,
             name: 'G',

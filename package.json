@@ -12,25 +12,25 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@effect/platform-browser": "4.0.0-rc.111",
-    "@foldkit/ui": "^0.151.0",
+    "@effect/platform-browser": "4.0.0",
+    "@foldkit/ui": "0.169.0-canary.1f6776fa7ece",
     "clsx": "^2.1.1",
-    "effect": "4.0.0-rc.111",
-    "foldkit": "^0.151.0"
+    "effect": "4.0.0",
+    "foldkit": "0.169.0-canary.1f6776fa7ece"
   },
   "devDependencies": {
-    "@foldkit/devtools": "^0.151.0",
-    "@foldkit/devtools-mcp": "^0.17.0",
-    "@foldkit/oxlint-plugin": "^0.8.0",
-    "@foldkit/vite-plugin": "^0.17.0",
+    "@foldkit/devtools": "0.169.0-canary.1f6776fa7ece",
+    "@foldkit/devtools-mcp": "0.25.0-canary.1f6776fa7ece",
+    "@foldkit/oxlint-plugin": "0.15.3-canary.1f6776fa7ece",
+    "@foldkit/vite-plugin": "0.28.0-canary.1f6776fa7ece",
     "@tailwindcss/vite": "^4.3.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "happy-dom": "^20.10.4",
     "oxlint": "^1.79.0",
     "prettier": "^3.8.4",
     "tailwindcss": "^4.3.1",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.16",
+    "typescript": "7.1.0-beta",
+    "vite": "8.3.3",
     "vitest": "^4.1.9"
   }
 }

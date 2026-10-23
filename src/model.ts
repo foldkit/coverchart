@@ -1,20 +1,20 @@
-import { Schema as S } from 'effect'
+import { Schema } from 'effect'
 
 import { Song } from './domain'
 import { ResolvedTheme, ThemePreference } from './message'
-import { Editor, Home, Play } from './page'
-import { AppRoute } from './route'
-import { Toast } from './toast'
+import { EditorBlock, HomeBlock, PlayBlock } from './page'
+import { ApplicationRoute } from './route'
+import { ToastBlock } from './toast'
 
-export const Model = S.Struct({
-  route: AppRoute,
-  songs: S.Array(Song.Song),
-  home: Home.Model,
-  editor: Editor.Model,
-  play: Play.Model,
-  toast: Toast.Model,
-  maybePendingEditSongId: S.Option(S.String),
-  maybeThemePreference: S.Option(ThemePreference),
+export const Model = Schema.Struct({
+  route: ApplicationRoute,
+  songs: Schema.Array(Song.Song),
+  home: HomeBlock.Model,
+  editor: EditorBlock.Model,
+  play: PlayBlock.Model,
+  toast: ToastBlock.Model,
+  maybePendingEditSongId: Schema.Option(Schema.String),
+  maybeThemePreference: Schema.Option(ThemePreference),
   systemTheme: ResolvedTheme,
   resolvedTheme: ResolvedTheme,
 })

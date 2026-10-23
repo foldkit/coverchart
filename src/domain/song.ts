@@ -1,22 +1,24 @@
-import { Array, Effect, Option, Schema as S, String as Str, pipe } from 'effect'
-import { evo } from 'foldkit/struct'
+import { Array, Effect, Option, Schema, String, pipe } from 'effect'
+import { modifyFields } from 'foldkit/struct'
 
 import * as Chord from './chord'
 import * as Line from './line'
 import { Section, SectionKind } from './section'
 import * as SectionModule from './section'
 
-export const Song = S.Struct({
-  id: S.String,
-  title: S.String,
-  artist: S.String,
-  maybeOriginalKey: S.Option(S.String),
-  transpose: S.Number,
-  capo: S.Number,
-  chords: S.Array(S.String).pipe(
-    S.withDecodingDefaultTypeKey(Effect.succeed<ReadonlyArray<string>>([])),
+export const Song = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  artist: Schema.String,
+  maybeOriginalKey: Schema.Option(Schema.String),
+  transpose: Schema.Number,
+  capo: Schema.Number,
+  chords: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultTypeKey(
+      Effect.succeed<ReadonlyArray<string>>([]),
+    ),
   ),
-  sections: S.Array(Section),
+  sections: Schema.Array(Section),
 })
 
 export type Song = typeof Song.Type
@@ -33,8 +35,8 @@ export const create = (id: string, sectionId: string): Song => ({
 })
 
 export const displayTitle = (song: Song): string =>
-  pipe(song.title, Str.trim, title =>
-    Str.isNonEmpty(title) ? title : 'Untitled',
+  pipe(song.title, String.trim, title =>
+    String.isNonEmpty(title) ? title : 'Untitled',
   )
 
 export const findById = (
@@ -63,24 +65,24 @@ export const remove = (
 ): ReadonlyArray<Song> => Array.filter(songs, ({ id }) => id !== songId)
 
 export const addChord = (song: Song, name: string): Song => {
-  const chord = pipe(name, Str.trim)
-  if (pipe(chord, Str.isEmpty) || Array.contains(song.chords, chord)) {
+  const chord = pipe(name, String.trim)
+  if (pipe(chord, String.isEmpty) || Array.contains(song.chords, chord)) {
     return song
   }
 
-  return evo(song, { chords: Array.append(chord) })
+  return modifyFields(song, { chords: Array.append(chord) })
 }
 
 export const removeChord = (song: Song, name: string): Song =>
-  evo(song, { chords: Array.filter(chord => chord !== name) })
+  modifyFields(song, { chords: Array.filter(chord => chord !== name) })
 
 export const matchesQuery = (song: Song, query: string): boolean => {
-  const normalized = pipe(query, Str.trim, Str.toLowerCase)
-  if (pipe(normalized, Str.isEmpty)) {
+  const normalized = pipe(query, String.trim, String.toLowerCase)
+  if (pipe(normalized, String.isEmpty)) {
     return true
   }
 
-  const haystack = pipe(`${song.title} ${song.artist}`, Str.toLowerCase)
+  const haystack = pipe(`${song.title} ${song.artist}`, String.toLowerCase)
 
   return haystack.includes(normalized)
 }
@@ -95,7 +97,7 @@ export const updateSection = (
   sectionId: string,
   f: (section: Section) => Section,
 ): Song =>
-  evo(song, {
+  modifyFields(song, {
     sections: Array.map(section =>
       section.id === sectionId ? f(section) : section,
     ),
@@ -108,7 +110,7 @@ export const findSection = (
   Array.findFirst(song.sections, ({ id }) => id === sectionId)
 
 export const addSection = (song: Song, section: Section): Song =>
-  evo(song, { sections: Array.append(section) })
+  modifyFields(song, { sections: Array.append(section) })
 
 export const insertSectionAfter = (
   song: Song,
@@ -120,7 +122,7 @@ export const insertSectionAfter = (
     Option.flatMap(index => Array.insertAt(song.sections, index + 1, section)),
     Option.match({
       onNone: () => addSection(song, section),
-      onSome: sections => evo(song, { sections: () => sections }),
+      onSome: sections => modifyFields(song, { sections: () => sections }),
     }),
   )
 
@@ -128,7 +130,7 @@ export const removeSection = (song: Song, sectionId: string): Song => {
   const remaining = Array.filter(song.sections, ({ id }) => id !== sectionId)
   return Array.match(remaining, {
     onEmpty: () => song,
-    onNonEmpty: sections => evo(song, { sections: () => sections }),
+    onNonEmpty: sections => modifyFields(song, { sections: () => sections }),
   })
 }
 
@@ -137,7 +139,7 @@ export const reorderSections = (
   itemId: string,
   toIndex: number,
 ): Song =>
-  evo(song, {
+  modifyFields(song, {
     sections: sections => SectionModule.reorder(sections, itemId, toIndex),
   })
 
@@ -146,14 +148,16 @@ export const setKind = (
   sectionId: string,
   kind: SectionKind,
 ): Song =>
-  updateSection(song, sectionId, section => evo(section, { kind: () => kind }))
+  updateSection(song, sectionId, section =>
+    modifyFields(section, { kind: () => kind }),
+  )
 
 export const updateLine = (
   song: Song,
   lineId: string,
   f: (line: Line.LyricLine) => Line.LyricLine,
 ): Song =>
-  evo(song, {
+  modifyFields(song, {
     sections: Array.map(section =>
       SectionModule.updateLine(section, lineId, f),
     ),
@@ -185,8 +189,8 @@ const formatLine = (
     return `${padded}${name}`
   })
 
-  return pipe(chordRow, Str.trimEnd, chords =>
-    Str.isNonEmpty(chords) ? `${chords}\n${line.lyric}` : line.lyric,
+  return pipe(chordRow, String.trimEnd, chords =>
+    String.isNonEmpty(chords) ? `${chords}\n${line.lyric}` : line.lyric,
   )
 }
 
@@ -210,7 +214,7 @@ const formatSection = (
 
 export const toChartText = (song: Song): string => {
   const title = displayTitle(song)
-  const artistLine = pipe(song.artist, Str.trim)
+  const artistLine = pipe(song.artist, String.trim)
   const keyLine = Option.match(song.maybeOriginalKey, {
     onNone: () => '',
     onSome: key => `Key: ${key}`,
@@ -219,11 +223,11 @@ export const toChartText = (song: Song): string => {
   const transposeLine =
     song.transpose === 0
       ? ''
-      : `Transpose: ${song.transpose > 0 ? '+' : ''}${String(song.transpose)}`
+      : `Transpose: ${song.transpose > 0 ? '+' : ''}${globalThis.String(song.transpose)}`
 
   const header = pipe(
     [title, artistLine, keyLine, capoLine, transposeLine],
-    Array.filter(Str.isNonEmpty),
+    Array.filter(String.isNonEmpty),
     Array.join('\n'),
   )
 
@@ -233,7 +237,7 @@ export const toChartText = (song: Song): string => {
     Array.join('\n\n'),
   )
 
-  return Array.match(pipe([header, body], Array.filter(Str.isNonEmpty)), {
+  return Array.match(pipe([header, body], Array.filter(String.isNonEmpty)), {
     onEmpty: () => title,
     onNonEmpty: parts => Array.join(parts, '\n\n'),
   })

@@ -1,18 +1,18 @@
-import { Array, Option, Order, Schema as S, pipe } from 'effect'
-import { evo } from 'foldkit/struct'
+import { Array, Option, Order, Schema, pipe } from 'effect'
+import { modifyFields } from 'foldkit/struct'
 
-export const ChordMark = S.Struct({
-  id: S.String,
-  at: S.Number,
-  name: S.String,
+export const ChordMark = Schema.Struct({
+  id: Schema.String,
+  at: Schema.Number,
+  name: Schema.String,
 })
 
 export type ChordMark = typeof ChordMark.Type
 
-export const LyricLine = S.Struct({
-  id: S.String,
-  lyric: S.String,
-  marks: S.Array(ChordMark),
+export const LyricLine = Schema.Struct({
+  id: Schema.String,
+  lyric: Schema.String,
+  marks: Schema.Array(ChordMark),
 })
 
 export type LyricLine = typeof LyricLine.Type
@@ -43,7 +43,7 @@ export const markAt = (line: LyricLine, at: number): Option.Option<ChordMark> =>
   Array.findFirst(line.marks, mark => mark.at === at)
 
 export const upsertMark = (line: LyricLine, mark: ChordMark): LyricLine =>
-  evo(line, {
+  modifyFields(line, {
     marks: marks =>
       pipe(
         marks,
@@ -58,14 +58,14 @@ export const updateMarkName = (
   markId: string,
   name: string,
 ): LyricLine =>
-  evo(line, {
+  modifyFields(line, {
     marks: Array.map(mark =>
-      mark.id === markId ? evo(mark, { name: () => name }) : mark,
+      mark.id === markId ? modifyFields(mark, { name: () => name }) : mark,
     ),
   })
 
 export const removeMark = (line: LyricLine, markId: string): LyricLine =>
-  evo(line, {
+  modifyFields(line, {
     marks: Array.filter(({ id }) => id !== markId),
   })
 
@@ -75,7 +75,7 @@ export const setLyric = (line: LyricLine, lyric: string): LyricLine => {
     Array.map(({ start }) => start),
   )
 
-  return evo(line, {
+  return modifyFields(line, {
     lyric: () => lyric,
     marks: Array.filter(({ at }) => Array.contains(nextStarts, at)),
   })

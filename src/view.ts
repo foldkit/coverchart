@@ -1,22 +1,27 @@
 import clsx from 'clsx'
-import { Match as M, Option } from 'effect'
-import type { Document, Html, HtmlBuilder } from 'foldkit/html'
+import { Match, Option } from 'effect'
+import type { Html } from 'foldkit/html'
 
 import { DragAndDrop } from '@foldkit/ui'
 
+import {
+  ApplicationComposition,
+  type ApplicationViewBuilder,
+  EditorBinding,
+  HomeBinding,
+  PlayBinding,
+  ToastBinding,
+} from './composition'
 import { Song } from './domain'
-import { Message } from './message'
 import { Model } from './model'
 import { notFoundView } from './notFoundView'
-import { Editor, Home, Play } from './page'
 import { homeRouter } from './route'
-import { Toast } from './toast'
 import * as className from './view/className'
 import { themeSelector } from './view/themeSelector'
 
 const descriptionView = (
   maybeDescription: Option.Option<string>,
-  h: HtmlBuilder<Message>,
+  h: ApplicationViewBuilder,
 ): Html =>
   Option.match(maybeDescription, {
     onNone: () => h.empty,
@@ -27,81 +32,71 @@ const descriptionView = (
       ),
   })
 
-const toastView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.submodel({
-    slotId: 'app-toast',
-    model: model.toast,
-    view: Toast.view,
-    viewInputs: {
-      position: 'BottomRight',
-      ariaLabel: 'Notifications',
-      entryToView: (entry, handlers) =>
-        h.div(
-          [
-            h.Class(
-              'pointer-events-auto max-w-sm rounded-md border border-stone-200 bg-white px-4 py-3 shadow-lg dark:border-stone-700 dark:bg-stone-900',
-            ),
-          ],
-          [
-            h.div(
-              [h.Class('flex items-start justify-between gap-3')],
-              [
-                h.div(
-                  [],
-                  [
-                    h.p(
-                      [
-                        h.Class(
-                          'font-medium text-stone-900 dark:text-stone-100',
-                        ),
-                      ],
-                      [entry.payload.title],
-                    ),
-                    descriptionView(entry.payload.maybeDescription, h),
-                  ],
-                ),
-                h.button(
-                  [
-                    ...handlers.dismiss,
-                    h.Class(className.quietButton),
-                    h.AriaLabel('Dismiss notification'),
-                  ],
-                  ['Dismiss'],
-                ),
-              ],
-            ),
-          ],
-        ),
-    },
-    toParentMessage: message => Message.GotToastMessage({ message }),
-  })
+const toastView = (model: Model, h: ApplicationViewBuilder): Html =>
+  h.block(
+    ToastBinding.embedView({
+      slotId: 'app-toast',
+      model: model.toast,
+      viewInputs: {
+        position: 'BottomRight',
+        ariaLabel: 'Notifications',
+        entryToView: (entry, handlers) =>
+          h.div(
+            [
+              h.Class(
+                'pointer-events-auto max-w-sm rounded-md border border-stone-200 bg-white px-4 py-3 shadow-lg dark:border-stone-700 dark:bg-stone-900',
+              ),
+            ],
+            [
+              h.div(
+                [h.Class('flex items-start justify-between gap-3')],
+                [
+                  h.div(
+                    [],
+                    [
+                      h.p(
+                        [
+                          h.Class(
+                            'font-medium text-stone-900 dark:text-stone-100',
+                          ),
+                        ],
+                        [entry.payload.title],
+                      ),
+                      descriptionView(entry.payload.maybeDescription, h),
+                    ],
+                  ),
+                  h.button(
+                    [
+                      ...handlers.dismiss,
+                      h.Class(className.quietButton),
+                      h.AriaLabel('Dismiss notification'),
+                    ],
+                    ['Dismiss'],
+                  ),
+                ],
+              ),
+            ],
+          ),
+      },
+    }),
+  )
 
-const homePageView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.submodel({
-    slotId: 'home',
-    model: model.home,
-    view: Home.view,
-    viewInputs: { songs: model.songs },
-    toParentMessage: message => Message.GotHomeMessage({ message }),
-  })
+const homePageView = (model: Model, h: ApplicationViewBuilder): Html =>
+  h.block(
+    HomeBinding.embedView({
+      slotId: 'home',
+      model: model.home,
+      viewInputs: { songs: model.songs },
+    }),
+  )
 
-const editorPageView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.submodel({
-    slotId: 'editor',
-    model: model.editor,
-    view: Editor.view,
-    toParentMessage: message => Message.GotEditorMessage({ message }),
-  })
+const editorPageView = (model: Model, h: ApplicationViewBuilder): Html =>
+  h.block(EditorBinding.embedView({ slotId: 'editor', model: model.editor }))
 
-const playPageView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.submodel({
-    slotId: 'play',
-    model: model.play,
-    view: Play.view,
-    toParentMessage: message => Message.GotPlayMessage({ message }),
-  })
+const playPageView = (model: Model, h: ApplicationViewBuilder): Html =>
+  h.block(PlayBinding.embedView({ slotId: 'play', model: model.play }))
 
-const missingSongView = (h: HtmlBuilder<Message>): Html =>
+const missingSongView = (h: ApplicationViewBuilder): Html =>
   h.main(
     [h.Class('flex flex-col items-center gap-4 py-16 text-center')],
     [
@@ -120,8 +115,8 @@ const missingSongView = (h: HtmlBuilder<Message>): Html =>
 const songPageView = (
   model: Model,
   songId: string,
-  pageView: (model: Model, h: HtmlBuilder<Message>) => Html,
-  h: HtmlBuilder<Message>,
+  pageView: (model: Model, h: ApplicationViewBuilder) => Html,
+  h: ApplicationViewBuilder,
 ): Html =>
   Option.match(Song.findById(model.songs, songId), {
     onNone: () => missingSongView(h),
@@ -129,8 +124,8 @@ const songPageView = (
   })
 
 const documentTitle = (model: Model): string =>
-  M.value(model.route).pipe(
-    M.tagsExhaustive({
+  Match.value(model.route).pipe(
+    Match.tagsExhaustive({
       Home: () => 'Coverchart',
       SongEdit: ({ songId }) =>
         Option.match(Song.findById(model.songs, songId), {
@@ -146,9 +141,9 @@ const documentTitle = (model: Model): string =>
     }),
   )
 
-const routeBodyView = (model: Model, h: HtmlBuilder<Message>): Html =>
-  M.value(model.route).pipe(
-    M.tagsExhaustive({
+const routeBodyView = (model: Model, h: ApplicationViewBuilder): Html =>
+  Match.value(model.route).pipe(
+    Match.tagsExhaustive({
       Home: () => homePageView(model, h),
       SongEdit: ({ songId }) => songPageView(model, songId, editorPageView, h),
       SongPlay: ({ songId }) => songPageView(model, songId, playPageView, h),
@@ -156,7 +151,7 @@ const routeBodyView = (model: Model, h: HtmlBuilder<Message>): Html =>
     }),
   )
 
-export const view = (model: Model, h: HtmlBuilder<Message>): Document => ({
+export const view = ApplicationComposition.makeView((model, h) => ({
   title: documentTitle(model),
   body: h.div(
     [
@@ -182,4 +177,4 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => ({
       toastView(model, h),
     ],
   ),
-})
+}))

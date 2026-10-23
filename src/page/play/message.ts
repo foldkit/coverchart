@@ -1,16 +1,17 @@
-import { Schema as S } from 'effect'
+import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
 import { Song } from '../../domain'
 
 export const Message = defineMessageUnion({
+  InformedOfSongChange: { song: Song.Song },
   ClickedTransposeDown: {},
   ClickedTransposeUp: {},
   ClickedCapoDown: {},
   ClickedCapoUp: {},
   ClickedCopyChart: {},
   SucceededCopyChart: {},
-  FailedCopyChart: { error: S.String },
+  FailedCopyChart: { error: Schema.String },
 })
 export type Message = typeof Message.Type
 
@@ -19,6 +20,6 @@ export type Message = typeof Message.Type
 export const OutMessage = defineMessageUnion({
   UpdatedSong: { song: Song.Song },
   CopiedChart: {},
-  FailedCopy: { error: S.String },
+  FailedCopy: { error: Schema.String },
 })
 export type OutMessage = typeof OutMessage.Type

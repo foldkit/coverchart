@@ -6,20 +6,20 @@ import {
   model,
   story,
 } from 'foldkit/story'
-import { evo } from 'foldkit/struct'
+import { modifyFields } from 'foldkit/struct'
 import { describe, expect, test } from 'vitest'
 
 import { Line, Song } from '../../domain'
 import { CopyChart } from './command'
+import { init } from './init'
 import { Message, OutMessage } from './message'
-import { init } from './model'
 import { update } from './update'
 
 const base = Song.updateSection(
   Song.create('song-1', 'section-1'),
   'section-1',
   section =>
-    evo(section, {
+    modifyFields(section, {
       lines: () => [
         Line.upsertMark(Line.empty('line-1', 'Hello world'), {
           id: 'mark-1',
@@ -45,7 +45,7 @@ describe('play view preferences', () => {
       }),
       expectOutMessage(
         OutMessage.UpdatedSong({
-          song: evo(base, { transpose: () => 1 }),
+          song: modifyFields(base, { transpose: () => 1 }),
         }),
       ),
     )
@@ -61,7 +61,7 @@ describe('play view preferences', () => {
         expect(Song.toChartText(current.song)).toContain('F#')
       }),
       expectOutMessage(
-        OutMessage.UpdatedSong({ song: evo(base, { capo: () => 1 }) }),
+        OutMessage.UpdatedSong({ song: modifyFields(base, { capo: () => 1 }) }),
       ),
     )
   })

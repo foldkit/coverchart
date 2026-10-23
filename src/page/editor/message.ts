@@ -1,52 +1,40 @@
-import { Schema as S } from 'effect'
+import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
-import { ts } from 'foldkit/schema'
-
-import { Dialog, DragAndDrop, Menu } from '@foldkit/ui'
+import { defineTaggedUnion } from 'foldkit/schema'
 
 import { Section, Song } from '../../domain'
 
-export const NewSectionRequest = ts('NewSection', { kind: Section.SectionKind })
-export const DuplicateSectionRequest = ts('DuplicateSection', {
-  sectionId: S.String,
+export const IdRequest = defineTaggedUnion({
+  NewSection: { kind: Section.SectionKind },
+  DuplicateSection: { sectionId: Schema.String },
+  NewMark: {
+    lineId: Schema.String,
+    at: Schema.Number,
+    name: Schema.String,
+  },
 })
-export const NewMarkRequest = ts('NewMark', {
-  lineId: S.String,
-  at: S.Number,
-  name: S.String,
-})
-
-export const IdRequest = S.Union([
-  NewSectionRequest,
-  DuplicateSectionRequest,
-  NewMarkRequest,
-])
-
 export type IdRequest = typeof IdRequest.Type
 
 export const Message = defineMessageUnion({
-  UpdatedTitle: { value: S.String },
-  UpdatedArtist: { value: S.String },
-  UpdatedOriginalKey: { value: S.String },
-  ClickedEditLyrics: { sectionId: S.String },
-  UpdatedLyricsDraft: { value: S.String },
+  InformedOfSongChange: { song: Song.Song },
+  UpdatedTitle: { value: Schema.String },
+  UpdatedArtist: { value: Schema.String },
+  UpdatedOriginalKey: { value: Schema.String },
+  ClickedEditLyrics: { sectionId: Schema.String },
+  UpdatedLyricsDraft: { value: Schema.String },
   ClickedSaveLyrics: {},
   ClickedCancelLyrics: {},
-  ClickedWord: { lineId: S.String, at: S.Number },
-  UpdatedPaletteDraft: { value: S.String },
+  ClickedWord: { lineId: Schema.String, at: Schema.Number },
+  UpdatedPaletteDraft: { value: Schema.String },
   SubmittedPaletteChord: {},
-  ClickedRemovePaletteChord: { name: S.String },
-  ClickedRemoveSection: { sectionId: S.String },
+  ClickedRemovePaletteChord: { name: Schema.String },
+  ClickedRemoveSection: { sectionId: Schema.String },
   ClickedConfirmRemoveSection: {},
-  ClickedDuplicateSection: { sectionId: S.String },
+  ClickedDuplicateSection: { sectionId: Schema.String },
   CompletedGenerateEditorIds: {
-    ids: S.Array(S.String),
+    ids: Schema.Array(Schema.String),
     request: IdRequest,
   },
-  GotAddSectionMenuMessage: { message: Menu.Message },
-  GotChordMenuMessage: { message: Menu.Message },
-  GotSectionDragAndDropMessage: { message: DragAndDrop.Message },
-  GotDeleteSectionDialogMessage: { message: Dialog.Message },
 })
 export type Message = typeof Message.Type
 

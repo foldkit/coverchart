@@ -1,12 +1,12 @@
-import { Schema as S } from 'effect'
+import { Schema } from 'effect'
 
 import { Toast as UiToast } from '@foldkit/ui'
 
-export const ToastPayload = S.Struct({
-  title: S.String,
-  maybeDescription: S.Option(S.String),
+export const ToastPayload = Schema.Struct({
+  title: Schema.String,
+  maybeDescription: Schema.Option(Schema.String),
 })
 
 export type ToastPayload = typeof ToastPayload.Type
 
-export const Toast = UiToast.make(ToastPayload)
+export const ToastBlock = UiToast.make(ToastPayload)

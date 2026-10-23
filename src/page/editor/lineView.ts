@@ -1,19 +1,19 @@
-import { Array, Match as M, Option, String as Str } from 'effect'
-import type { Html, HtmlBuilder } from 'foldkit/html'
+import { Array, Match, Option, String } from 'effect'
+import type { Html } from 'foldkit/html'
 import { childAttributes } from 'foldkit/html'
 
-import { Button, Menu } from '@foldkit/ui'
+import { Button } from '@foldkit/ui'
+import type { AnchorConfig } from '@foldkit/ui/menu'
 
 import { CHORD_MENU_CLEAR, CHORD_MENU_EMPTY } from '../../constant'
 import { Line } from '../../domain'
 import * as className from '../../view/className'
+import { ChordMenuBinding, type EditorViewBuilder } from './composition'
 import { Message } from './message'
 import type { Model, PlacingChord } from './model'
 
-const ChordMenu = Menu.create<string>()
-
-const MENU_ANCHOR = {
-  placement: 'bottom-start' as const,
+const MENU_ANCHOR: AnchorConfig = {
+  placement: 'bottom-start',
   gap: 4,
   padding: 8,
 }
@@ -42,7 +42,7 @@ const chordSlotView = (
   line: Line.LyricLine,
   word: Line.Word,
   maybePlacing: Option.Option<PlacingChord>,
-  h: HtmlBuilder<Message>,
+  h: EditorViewBuilder,
 ): Html => {
   if (isPlacingOnWord(maybePlacing, line.id, word.start)) {
     return Option.match(Line.markAt(line, word.start), {
@@ -83,7 +83,7 @@ const chordSlotView = (
 const wordButtonView = (
   line: Line.LyricLine,
   word: Line.Word,
-  h: HtmlBuilder<Message>,
+  h: EditorViewBuilder,
 ): Html =>
   Button.view(
     {
@@ -105,58 +105,58 @@ const chordMenuView = (
   word: Line.Word,
   chords: ReadonlyArray<string>,
   hasMark: boolean,
-  chordMenu: Menu.Model,
-  h: HtmlBuilder<Message>,
+  chordMenu: Model['chordMenu'],
+  h: EditorViewBuilder,
 ): Html =>
-  h.submodel({
-    slotId: chordMenu.id,
-    model: chordMenu,
-    view: ChordMenu.view,
-    viewInputs: {
-      anchor: MENU_ANCHOR,
-      ariaLabel: `Choose a chord for ${word.text}`,
-      items: chordMenuItems(chords, hasMark),
-      isItemDisabled: item => item === CHORD_MENU_EMPTY,
-      itemToConfig: item => ({
-        className:
-          'min-h-11 cursor-pointer px-3 py-2 text-sm font-semibold text-amber-800 data-[active]:bg-amber-50 data-[disabled]:cursor-not-allowed data-[disabled]:font-normal data-[disabled]:text-stone-500 dark:text-amber-300 dark:data-[active]:bg-amber-950 dark:data-[disabled]:text-stone-400',
-        content: h.span(
-          [],
-          [
-            item === CHORD_MENU_EMPTY
-              ? 'Add chords to this song first'
-              : item === CHORD_MENU_CLEAR
-                ? 'Clear'
-                : item,
-          ],
-        ),
-      }),
-      buttonContent: h.span([], [word.text]),
-      buttonAttributes: childAttributes([
-        h.Class(`${className.wordButton} bg-amber-100 dark:bg-amber-950`),
-      ]),
-      itemsAttributes: childAttributes([
-        h.Class(
-          'z-20 min-w-36 overflow-hidden rounded-md border border-stone-200 bg-white shadow-lg outline-none dark:border-stone-700 dark:bg-stone-900',
-        ),
-      ]),
-      attributes: childAttributes([h.Class('relative inline-block')]),
-    },
-    toParentMessage: message => Message.GotChordMenuMessage({ message }),
-  })
+  h.block(
+    ChordMenuBinding.embedView({
+      slotId: chordMenu.id,
+      model: chordMenu,
+      viewInputs: {
+        anchor: MENU_ANCHOR,
+        ariaLabel: `Choose a chord for ${word.text}`,
+        items: chordMenuItems(chords, hasMark),
+        isItemDisabled: item => item === CHORD_MENU_EMPTY,
+        itemToConfig: item => ({
+          className:
+            'min-h-11 cursor-pointer px-3 py-2 text-sm font-semibold text-amber-800 data-[active]:bg-amber-50 data-[disabled]:cursor-not-allowed data-[disabled]:font-normal data-[disabled]:text-stone-500 dark:text-amber-300 dark:data-[active]:bg-amber-950 dark:data-[disabled]:text-stone-400',
+          content: h.span(
+            [],
+            [
+              item === CHORD_MENU_EMPTY
+                ? 'Add chords to this song first'
+                : item === CHORD_MENU_CLEAR
+                  ? 'Clear'
+                  : item,
+            ],
+          ),
+        }),
+        buttonContent: h.span([], [word.text]),
+        buttonAttributes: childAttributes([
+          h.Class(`${className.wordButton} bg-amber-100 dark:bg-amber-950`),
+        ]),
+        itemsAttributes: childAttributes([
+          h.Class(
+            'z-20 min-w-36 overflow-hidden rounded-md border border-stone-200 bg-white shadow-lg outline-none dark:border-stone-700 dark:bg-stone-900',
+          ),
+        ]),
+        attributes: childAttributes([h.Class('relative inline-block')]),
+      },
+    }),
+  )
 
 export const lineView = (
   line: Line.LyricLine,
   maybePlacing: Option.Option<PlacingChord>,
   chords: ReadonlyArray<string>,
-  chordMenu: Menu.Model,
-  h: HtmlBuilder<Message>,
+  chordMenu: Model['chordMenu'],
+  h: EditorViewBuilder,
 ): Html =>
   Array.match(Line.words(line.lyric), {
     onEmpty: () =>
       h.p(
         [h.Class('min-h-7 text-sm text-stone-400 dark:text-stone-500')],
-        [Str.isNonEmpty(line.lyric) ? line.lyric : 'Empty line'],
+        [String.isNonEmpty(line.lyric) ? line.lyric : 'Empty line'],
       ),
     onNonEmpty: words =>
       h.div(
@@ -169,7 +169,7 @@ export const lineView = (
           )
 
           return h.keyed('div')(
-            `${line.id}-${String(word.start)}`,
+            `${line.id}-${globalThis.String(word.start)}`,
             [h.Class('flex flex-col items-start')],
             [
               chordSlotView(line, word, maybePlacing, h),
@@ -189,22 +189,22 @@ export const lineView = (
   })
 
 export const maybePlacingChord = (model: Model): Option.Option<PlacingChord> =>
-  M.value(model.mode).pipe(
-    M.tag('PlacingChord', placing => placing),
-    M.option,
+  Match.value(model.mode).pipe(
+    Match.tag('PlacingChord', placing => placing),
+    Match.option,
   )
 
 export const isEditingSection = (model: Model, sectionId: string): boolean =>
   Option.exists(
-    M.value(model.mode).pipe(
-      M.tag('EditingLyrics', editing => editing),
-      M.option,
+    Match.value(model.mode).pipe(
+      Match.tag('EditingLyrics', editing => editing),
+      Match.option,
     ),
     editing => editing.sectionId === sectionId,
   )
 
 export const lyricsDraft = (model: Model): string =>
-  M.value(model.mode).pipe(
-    M.tag('EditingLyrics', ({ draft }) => draft),
-    M.orElse(() => ''),
+  Match.value(model.mode).pipe(
+    Match.tag('EditingLyrics', ({ draft }) => draft),
+    Match.orElse(() => ''),
   )

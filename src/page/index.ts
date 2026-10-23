@@ -1,3 +1,3 @@
-export * as Editor from './editor'
-export * as Home from './home'
-export * as Play from './play'
+export { EditorBlock } from './editor'
+export { HomeBlock } from './home'
+export { PlayBlock } from './play'

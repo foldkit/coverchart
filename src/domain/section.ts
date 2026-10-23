@@ -1,10 +1,10 @@
-import { Array, Option, Schema as S, pipe } from 'effect'
-import { evo } from 'foldkit/struct'
+import { Array, Option, Schema, pipe } from 'effect'
+import { modifyFields } from 'foldkit/struct'
 
 import { LyricLine } from './line'
 import * as Line from './line'
 
-export const SectionKind = S.Literals([
+export const SectionKind = Schema.Literals([
   'Intro',
   'Verse',
   'PreChorus',
@@ -31,10 +31,10 @@ export const SECTION_KINDS: ReadonlyArray<SectionKind> = [
 export const kindLabel = (kind: SectionKind): string =>
   kind === 'PreChorus' ? 'Pre-Chorus' : kind
 
-export const Section = S.Struct({
-  id: S.String,
+export const Section = Schema.Struct({
+  id: Schema.String,
   kind: SectionKind,
-  lines: S.Array(LyricLine),
+  lines: Schema.Array(LyricLine),
 })
 
 export type Section = typeof Section.Type
@@ -71,7 +71,7 @@ export const replaceLyrics = (section: Section, draft: string): Section => {
     ),
   )
 
-  return evo(section, { lines: () => lines })
+  return modifyFields(section, { lines: () => lines })
 }
 
 export const updateLine = (
@@ -79,7 +79,7 @@ export const updateLine = (
   lineId: string,
   f: (line: Line.LyricLine) => Line.LyricLine,
 ): Section =>
-  evo(section, {
+  modifyFields(section, {
     lines: Array.map(line => (line.id === lineId ? f(line) : line)),
   })
 
@@ -121,7 +121,7 @@ const duplicateMarks = (
       Option.match(Array.head(acc.remainingIds), {
         onNone: () => acc,
         onSome: id => ({
-          marks: Array.append(acc.marks, evo(mark, { id: () => id })),
+          marks: Array.append(acc.marks, modifyFields(mark, { id: () => id })),
           remainingIds: Array.drop(acc.remainingIds, 1),
         }),
       }),

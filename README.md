@@ -27,3 +27,22 @@ pnpm typecheck
 pnpm lint
 pnpm format
 ```
+
+## Foldkit preview
+
+This application tracks the Blocks + Effect Layers preview at
+[`1f6776fa7ece`](https://github.com/foldkit/foldkit/commit/1f6776fa7ececa766188df5201eefec6ba781b5d).
+The exact installed versions are pinned together in `package.json` and `pnpm-lock.yaml`.
+
+- [Verified package manifest](https://foldkit-website-preview-jlwvct0dx-devin-jamesons-projects.vercel.app/preview-release.json)
+- [Upgrade guide for this snapshot](https://foldkit-website-preview-jlwvct0dx-devin-jamesons-projects.vercel.app/preview-upgrade)
+- [Preview status and migration prompts](https://github.com/foldkit/foldkit/pull/1655)
+
+For subsequent previews, update only the installed Foldkit packages together,
+retain their dependency groups, and refresh the managed `FOLDKIT.md` from that
+snapshot. Preserve project-specific `AGENTS.md` instructions. Update the exact
+`minimumReleaseAgeExclude` entries alongside the package pins.
+
+Verify each upgrade in this repository with typecheck, lint, tests, a production
+build, and the song editing, persistence, Menu focus, and play-view flows.
+Use the target snapshot's guide; a moving branch is not an installed API version.

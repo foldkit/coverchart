@@ -9,7 +9,7 @@ import {
   selector,
   text,
 } from 'foldkit/scene'
-import { evo } from 'foldkit/struct'
+import { modifyFields } from 'foldkit/struct'
 import { describe, test } from 'vitest'
 
 import {
@@ -23,19 +23,19 @@ import { SECTIONS_CONTAINER_ID } from './constant'
 import { Song } from './domain'
 import { Message } from './message'
 import type { Model } from './model'
-import { Editor, Home, Play } from './page'
-import { HomeRoute, SongEditRoute } from './route'
-import { Toast } from './toast'
+import { EditorBlock, HomeBlock, PlayBlock } from './page'
+import { ApplicationRoute } from './route'
+import { ToastBlock } from './toast'
 import { update } from './update'
 import { view } from './view'
 
 const emptyModel: Model = {
-  route: HomeRoute(),
+  route: ApplicationRoute.Home(),
   songs: [],
-  home: Home.init().model,
-  editor: Editor.init(Editor.placeholderSong).model,
-  play: Play.init(Play.placeholderSong).model,
-  toast: Toast.init({ id: 'app-toast' }),
+  home: HomeBlock.init().model,
+  editor: EditorBlock.init(Song.create('placeholder-song', 'section-1')).model,
+  play: PlayBlock.init(Song.create('placeholder-song', 'section-1')).model,
+  toast: ToastBlock.init({ id: 'app-toast' }).model,
   maybePendingEditSongId: Option.none(),
   maybeThemePreference: Option.some('System'),
   systemTheme: 'Light',
@@ -93,14 +93,14 @@ describe('library view', () => {
 
   test('the shell marks itself as dragging while a section is moved', () => {
     const song = Song.create('song-1', 'section-1')
-    const editorInit = Editor.init(song)
-    const dragging: Model = evo(emptyModel, {
-      route: () => SongEditRoute({ songId: song.id }),
+    const editorInit = EditorBlock.init(song)
+    const dragging: Model = modifyFields(emptyModel, {
+      route: () => ApplicationRoute.SongEdit({ songId: song.id }),
       songs: () => [song],
       editor: () =>
-        evo(editorInit.model, {
+        modifyFields(editorInit.model, {
           sectionDragAndDrop: dnd =>
-            evo(dnd, {
+            modifyFields(dnd, {
               dragState: () => ({
                 _tag: 'Dragging',
                 itemId: 'section-1',

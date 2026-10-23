@@ -1,31 +1,30 @@
-import { Array, Option, String as Str, pipe } from 'effect'
-import { Submodel } from 'foldkit'
-import type { Html, HtmlBuilder } from 'foldkit/html'
+import { Array, Option, String, pipe } from 'effect'
+import type { Html } from 'foldkit/html'
 
 import { Button } from '@foldkit/ui'
 
 import { Song } from '../../domain'
 import { homeRouter, songEditRouter } from '../../route'
 import * as className from '../../view/className'
+import { PlayComposition, type PlayViewBuilder } from './composition'
 import { Message } from './message'
-import { Model } from './model'
 
 const formatSigned = (value: number): string =>
-  value > 0 ? `+${String(value)}` : String(value)
+  value > 0 ? `+${globalThis.String(value)}` : globalThis.String(value)
 
-const metaLineView = (song: Song.Song, h: HtmlBuilder<Message>): Html => {
+const metaLineView = (song: Song.Song, h: PlayViewBuilder): Html => {
   const keyText = Option.match(song.maybeOriginalKey, {
     onNone: () => '',
     onSome: key => `Key ${key}`,
   })
   const parts = pipe(
     [
-      Str.isNonEmpty(song.artist) ? song.artist : '',
+      String.isNonEmpty(song.artist) ? song.artist : '',
       keyText,
-      song.capo > 0 ? `Capo ${String(song.capo)}` : '',
+      song.capo > 0 ? `Capo ${globalThis.String(song.capo)}` : '',
       song.transpose !== 0 ? `Transpose ${formatSigned(song.transpose)}` : '',
     ],
-    Array.filter(Str.isNonEmpty),
+    Array.filter(String.isNonEmpty),
   )
 
   return Array.match(parts, {
@@ -38,7 +37,7 @@ const metaLineView = (song: Song.Song, h: HtmlBuilder<Message>): Html => {
   })
 }
 
-const controlsView = (h: HtmlBuilder<Message>): Html =>
+const controlsView = (h: PlayViewBuilder): Html =>
   h.div(
     [h.Class('flex flex-wrap gap-2')],
     [
@@ -100,7 +99,7 @@ const controlsView = (h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-export const view = Submodel.defineView<Model, Message>((model, h) =>
+export const view = PlayComposition.makeView((model, h) =>
   h.main(
     [h.Class('flex flex-col gap-8')],
     [

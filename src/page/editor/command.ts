@@ -1,19 +1,25 @@
-import { Array, Crypto, Effect, Schema as S } from 'effect'
-import { Command } from 'foldkit'
+import { Array, Crypto, Effect, Schema } from 'effect'
 
-import { BrowserCrypto } from '@effect/platform-browser'
-
+import { EditorDefinition } from './definition'
 import { IdRequest, Message } from './message'
 
-export const GenerateEditorIds = Command.define('GenerateEditorIds', {
-  args: { count: S.Number, request: IdRequest },
-  messages: [Message.CompletedGenerateEditorIds],
-  execute: ({ count, request }) =>
-    Effect.gen(function* () {
+export const GenerateEditorIds = EditorDefinition.makeCommand(
+  'GenerateEditorIds',
+  {
+    args: { count: Schema.Number, request: IdRequest },
+    messages: [Message.CompletedGenerateEditorIds],
+    handler: function* () {
       const crypto = yield* Crypto.Crypto
-      const ids = yield* Effect.all(
-        Array.makeBy(count, () => Effect.orDie(crypto.randomUUIDv4)),
-      )
-      return Message.CompletedGenerateEditorIds({ ids, request })
-    }).pipe(Effect.provide(BrowserCrypto.layer)),
-})
+
+      return ({ count, request }) =>
+        Effect.gen(function* () {
+          const ids = yield* Effect.all(
+            Array.makeBy(count, () => Effect.orDie(crypto.randomUUIDv4)),
+          )
+          return Message.CompletedGenerateEditorIds({ ids, request })
+        })
+    },
+  },
+)
+
+export const EffectsLayer = GenerateEditorIds.layer

@@ -1,9 +1,6 @@
-import { Crypto, Effect, Match as M, Schema as S } from 'effect'
-import { KeyValueStore } from 'effect/unstable/persistence'
-import { Command } from 'foldkit'
+import { Crypto, Effect, Layer, Match, Schema } from 'effect'
+import { KeyValueStore } from 'effect/persistence'
 import { load, pushUrl } from 'foldkit/navigation'
-
-import { BrowserCrypto, BrowserKeyValueStore } from '@effect/platform-browser'
 
 import {
   DARK_THEME_COLOR,
@@ -11,62 +8,79 @@ import {
   STORAGE_KEY,
   THEME_STORAGE_KEY,
 } from './constant'
+import { ApplicationDefinition } from './definition'
 import { Song } from './domain'
 import { Message, ResolvedTheme, ThemePreference } from './message'
+import { subscriptions } from './subscription'
 
-export const SavedLibrary = S.Struct({
-  songs: S.Array(Song.Song),
+export const SavedLibrary = Schema.Struct({
+  songs: Schema.Array(Song.Song),
 })
 
 export type SavedLibrary = typeof SavedLibrary.Type
 
-export const SavedLibraryJsonString = S.fromJsonString(
-  S.toCodecJson(SavedLibrary),
+export const SavedLibraryJsonString = Schema.fromJsonString(
+  Schema.toCodecJson(SavedLibrary),
 )
 
-export const GenerateSongIds = Command.define('GenerateSongIds', {
-  messages: [Message.CompletedGenerateSongIds],
-  execute: Effect.gen(function* () {
-    const crypto = yield* Crypto.Crypto
-    const songId = yield* Effect.orDie(crypto.randomUUIDv4)
-    const sectionId = yield* Effect.orDie(crypto.randomUUIDv4)
-    return Message.CompletedGenerateSongIds({ songId, sectionId })
-  }).pipe(Effect.provide(BrowserCrypto.layer)),
-})
+export const GenerateSongIds = ApplicationDefinition.makeCommand(
+  'GenerateSongIds',
+  {
+    messages: [Message.CompletedGenerateSongIds],
+    handler: function* () {
+      const crypto = yield* Crypto.Crypto
 
-export const SaveLibrary = Command.define('SaveLibrary', {
-  args: { songs: S.Array(Song.Song) },
+      return () =>
+        Effect.gen(function* () {
+          const songId = yield* Effect.orDie(crypto.randomUUIDv4)
+          const sectionId = yield* Effect.orDie(crypto.randomUUIDv4)
+          return Message.CompletedGenerateSongIds({ songId, sectionId })
+        })
+    },
+  },
+)
+
+export const SaveLibrary = ApplicationDefinition.makeCommand('SaveLibrary', {
+  args: { songs: Schema.Array(Song.Song) },
   messages: [Message.SucceededSaveLibrary, Message.FailedSaveLibrary],
-  execute: ({ songs }) =>
-    Effect.gen(function* () {
-      const store = yield* KeyValueStore.KeyValueStore
-      yield* store.set(
-        STORAGE_KEY,
-        S.encodeSync(SavedLibraryJsonString)({ songs }),
-      )
-      return Message.SucceededSaveLibrary()
-    }).pipe(
-      Effect.catch(() =>
-        Effect.succeed(
-          Message.FailedSaveLibrary({ error: 'Could not save your songs.' }),
-        ),
-      ),
-      Effect.provide(BrowserKeyValueStore.layerLocalStorage),
-    ),
+  handler: function* () {
+    const store = yield* KeyValueStore.KeyValueStore
+
+    return ({ songs }) =>
+      store
+        .set(STORAGE_KEY, Schema.encodeSync(SavedLibraryJsonString)({ songs }))
+        .pipe(
+          Effect.as(Message.SucceededSaveLibrary()),
+          Effect.catch(() =>
+            Effect.succeed(
+              Message.FailedSaveLibrary({
+                error: 'Could not save your songs.',
+              }),
+            ),
+          ),
+        )
+  },
 })
 
-export const NavigateInternal = Command.define('NavigateInternal', {
-  args: { url: S.String },
-  messages: [Message.CompletedNavigateInternal],
-  execute: ({ url }) =>
-    pushUrl(url).pipe(Effect.as(Message.CompletedNavigateInternal())),
-})
+export const NavigateInternal = ApplicationDefinition.makeCommand(
+  'NavigateInternal',
+  {
+    args: { url: Schema.String },
+    messages: [Message.CompletedNavigateInternal],
+    handler: function* () {
+      return ({ url }) =>
+        pushUrl(url).pipe(Effect.as(Message.CompletedNavigateInternal()))
+    },
+  },
+)
 
-export const LoadExternal = Command.define('LoadExternal', {
-  args: { href: S.String },
+export const LoadExternal = ApplicationDefinition.makeCommand('LoadExternal', {
+  args: { href: Schema.String },
   messages: [Message.CompletedLoadExternal],
-  execute: ({ href }) =>
-    load(href).pipe(Effect.as(Message.CompletedLoadExternal())),
+  handler: function* () {
+    return ({ href }) =>
+      load(href).pipe(Effect.as(Message.CompletedLoadExternal()))
+  },
 })
 
 const setThemeColorMeta = (color: string): void => {
@@ -76,38 +90,53 @@ const setThemeColorMeta = (color: string): void => {
   }
 }
 
-export const ApplyTheme = Command.define('ApplyTheme', {
+export const ApplyTheme = ApplicationDefinition.makeCommand('ApplyTheme', {
   args: { theme: ResolvedTheme },
   messages: [Message.CompletedApplyTheme],
-  execute: ({ theme }) =>
-    Effect.sync(() => {
-      M.value(theme).pipe(
-        M.when('Dark', () => {
-          document.documentElement.classList.add('dark')
-          setThemeColorMeta(DARK_THEME_COLOR)
-        }),
-        M.when('Light', () => {
-          document.documentElement.classList.remove('dark')
-          setThemeColorMeta(LIGHT_THEME_COLOR)
-        }),
-        M.exhaustive,
-      )
-      return Message.CompletedApplyTheme()
-    }),
+  handler: function* () {
+    return ({ theme }) =>
+      Effect.sync(() => {
+        Match.value(theme).pipe(
+          Match.when('Dark', () => {
+            document.documentElement.classList.add('dark')
+            setThemeColorMeta(DARK_THEME_COLOR)
+          }),
+          Match.when('Light', () => {
+            document.documentElement.classList.remove('dark')
+            setThemeColorMeta(LIGHT_THEME_COLOR)
+          }),
+          Match.exhaustive,
+        )
+        return Message.CompletedApplyTheme()
+      })
+  },
 })
 
-export const SaveThemePreference = Command.define('SaveThemePreference', {
-  args: { preference: ThemePreference },
-  messages: [Message.CompletedSaveThemePreference],
-  execute: ({ preference }) =>
-    Effect.gen(function* () {
+export const SaveThemePreference = ApplicationDefinition.makeCommand(
+  'SaveThemePreference',
+  {
+    args: { preference: ThemePreference },
+    messages: [Message.CompletedSaveThemePreference],
+    handler: function* () {
       const store = yield* KeyValueStore.KeyValueStore
-      yield* store.set(THEME_STORAGE_KEY, JSON.stringify(preference))
-      return Message.CompletedSaveThemePreference()
-    }).pipe(
-      Effect.catch(() =>
-        Effect.succeed(Message.CompletedSaveThemePreference()),
-      ),
-      Effect.provide(BrowserKeyValueStore.layerLocalStorage),
-    ),
-})
+
+      return ({ preference }) =>
+        store.set(THEME_STORAGE_KEY, JSON.stringify(preference)).pipe(
+          Effect.as(Message.CompletedSaveThemePreference()),
+          Effect.catch(() =>
+            Effect.succeed(Message.CompletedSaveThemePreference()),
+          ),
+        )
+    },
+  },
+)
+
+export const EffectsLayer = Layer.mergeAll(
+  GenerateSongIds.layer,
+  SaveLibrary.layer,
+  NavigateInternal.layer,
+  LoadExternal.layer,
+  ApplyTheme.layer,
+  SaveThemePreference.layer,
+  subscriptions.layer,
+)

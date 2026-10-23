@@ -1,13 +1,14 @@
 import clsx from 'clsx'
 import { Option } from 'effect'
-import { Html, type HtmlBuilder } from 'foldkit/html'
+import type { Html } from 'foldkit/html'
 
+import type { ApplicationViewBuilder } from '../composition'
 import { Message, type ThemePreference } from '../message'
 import { computer, moon, sun } from './icon'
 
 export const themeSelector = (
   maybeActivePreference: Option.Option<ThemePreference>,
-  h: HtmlBuilder<Message>,
+  h: ApplicationViewBuilder,
 ): Html =>
   h.div(
     [
@@ -47,7 +48,7 @@ const themeSelectorButton = (
   maybeActivePreference: Option.Option<ThemePreference>,
   icon: Html,
   label: string,
-  h: HtmlBuilder<Message>,
+  h: ApplicationViewBuilder,
 ) => {
   const isActive = Option.exists(
     maybeActivePreference,

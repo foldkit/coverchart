@@ -1,14 +1,11 @@
-import { Schema as S } from 'effect'
+import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
-import { Dialog } from '@foldkit/ui'
-
 export const Message = defineMessageUnion({
-  UpdatedSearchQuery: { value: S.String },
+  UpdatedSearchQuery: { value: Schema.String },
   ClickedNewSong: {},
-  ClickedDeleteSong: { songId: S.String },
+  ClickedDeleteSong: { songId: Schema.String },
   ClickedConfirmDelete: {},
-  GotDeleteDialogMessage: { message: Dialog.Message },
 })
 export type Message = typeof Message.Type
 
@@ -16,6 +13,6 @@ export type Message = typeof Message.Type
 
 export const OutMessage = defineMessageUnion({
   RequestedNewSong: {},
-  ConfirmedDeleteSong: { songId: S.String },
+  ConfirmedDeleteSong: { songId: Schema.String },
 })
 export type OutMessage = typeof OutMessage.Type

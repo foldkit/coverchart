@@ -1,29 +1,32 @@
-import { Array, Option, Schema as S } from 'effect'
-import { evo } from 'foldkit/struct'
+import { Array, Option, Schema } from 'effect'
+import { modifyFields } from 'foldkit/struct'
 import { fromString as urlFromString } from 'foldkit/url'
 import { describe, expect, test } from 'vitest'
 
-import { SavedLibraryJsonString } from './command'
+import { ApplyTheme, SavedLibraryJsonString } from './command'
 import { Line, Song } from './domain'
-import { Flags, init } from './main'
+import { Flags } from './flags'
+import { init } from './init'
 
 const libraryWithSong = (song: Song.Song) => ({ songs: [song] })
 
 describe('library persistence', () => {
   test('saved songs round-trip through localStorage JSON', () => {
-    const song = evo(Song.create('song-1', 'section-1'), {
+    const song = modifyFields(Song.create('song-1', 'section-1'), {
       title: () => 'Blackbird',
       artist: () => 'The Beatles',
       maybeOriginalKey: () => Option.some('G'),
       sections: Array.map(section =>
-        evo(section, {
+        modifyFields(section, {
           lines: () => [Line.empty('line-1', 'Blackbird singing')],
         }),
       ),
     })
 
-    const encoded = S.encodeSync(SavedLibraryJsonString)(libraryWithSong(song))
-    const decoded = S.decodeSync(SavedLibraryJsonString)(encoded)
+    const encoded = Schema.encodeSync(SavedLibraryJsonString)(
+      libraryWithSong(song),
+    )
+    const decoded = Schema.decodeSync(SavedLibraryJsonString)(encoded)
 
     expect(decoded.songs).toHaveLength(1)
     expect(decoded.songs[0]?.title).toBe('Blackbird')
@@ -56,7 +59,7 @@ describe('library persistence', () => {
       ],
     })
 
-    const decoded = S.decodeSync(SavedLibraryJsonString)(encoded)
+    const decoded = Schema.decodeSync(SavedLibraryJsonString)(encoded)
 
     expect(Option.isSome(Song.findById(decoded.songs, 'song-1'))).toBe(true)
     expect(decoded.songs[0]?.chords).toEqual([])
@@ -64,8 +67,10 @@ describe('library persistence', () => {
 
   test('booting on a song URL finds the saved chart', () => {
     const song = Song.create('song-1', 'section-1')
-    const encoded = S.encodeSync(SavedLibraryJsonString)(libraryWithSong(song))
-    const decoded = S.decodeSync(SavedLibraryJsonString)(encoded)
+    const encoded = Schema.encodeSync(SavedLibraryJsonString)(
+      libraryWithSong(song),
+    )
+    const decoded = Schema.decodeSync(SavedLibraryJsonString)(encoded)
     const url = Option.getOrThrow(
       urlFromString('http://localhost/songs/song-1'),
     )
@@ -84,7 +89,7 @@ describe('library persistence', () => {
     expect(init_.model.maybeThemePreference).toEqual(Option.some('System'))
     expect(init_.model.resolvedTheme).toBe('Light')
     expect(init_.commands ?? []).toHaveLength(1)
-    expect(init_.commands?.[0]?.name).toBe('ApplyTheme')
+    expect(init_.commands?.[0]?.name).toBe(ApplyTheme.name)
   })
 
   test('booting with a saved dark preference resolves dark', () => {
@@ -101,6 +106,6 @@ describe('library persistence', () => {
     expect(init_.model.maybeThemePreference).toEqual(Option.some('Dark'))
     expect(init_.model.resolvedTheme).toBe('Dark')
     expect(init_.commands ?? []).toHaveLength(1)
-    expect(init_.commands?.[0]?.name).toBe('ApplyTheme')
+    expect(init_.commands?.[0]?.name).toBe(ApplyTheme.name)
   })
 })

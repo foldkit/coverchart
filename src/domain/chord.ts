@@ -1,4 +1,4 @@
-import { Array, Option, String as Str, pipe } from 'effect'
+import { Array, Option, String, pipe } from 'effect'
 
 const SHARP_NAMES = [
   'C',
@@ -75,10 +75,10 @@ const transposePitchToken = (token: string, semitones: number): string => {
 }
 
 export const transpose = (name: string, semitones: number): string => {
-  const trimmed = pipe(name, Str.trim)
+  const trimmed = pipe(name, String.trim)
 
   if (
-    pipe(trimmed, Str.isEmpty) ||
+    pipe(trimmed, String.isEmpty) ||
     Array.contains(UNTRANSPOSABLE_NAMES, trimmed)
   ) {
     return name
