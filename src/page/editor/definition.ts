@@ -8,3 +8,11 @@ export const EditorDefinition = Block.makeDefinition('Editor', {
   Message,
   OutMessage,
 })
+
+export const {
+  makeCommandsStep,
+  makeFieldsStep,
+  makeNoopStep,
+  makeOutMessageStep,
+  makeStep,
+} = EditorDefinition

@@ -3,38 +3,38 @@ import { Update } from 'foldkit'
 import { modifyFields } from 'foldkit/struct'
 
 import { DeleteDialogBinding, HomeComposition } from './composition'
-import { Message, OutMessage } from './message'
+import { HomeDefinition } from './definition'
+import { OutMessage } from './message'
 
-export const update = HomeComposition.makeUpdate((model, message) =>
-  Message.match(message, {
-    UpdatedSearchQuery: ({ value }) => ({
-      model: modifyFields(model, { searchQuery: () => value }),
+export const update = HomeComposition.makeUpdate({
+  UpdatedSearchQuery: HomeDefinition.makeFieldsStep.fromMessage(
+    ({ value }) => ({
+      searchQuery: () => value,
     }),
+  ),
 
-    ClickedNewSong: () => ({
-      model,
-      outMessage: OutMessage.RequestedNewSong(),
-    }),
+  ClickedNewSong: HomeDefinition.makeOutMessageStep(() =>
+    OutMessage.RequestedNewSong(),
+  ),
 
-    ClickedDeleteSong: ({ songId }) =>
-      DeleteDialogBinding.requestOpen()(
-        modifyFields(model, {
-          maybePendingDeleteSongId: () => Option.some(songId),
-        }),
-      ),
-
-    ClickedConfirmDelete: () =>
-      Option.match(model.maybePendingDeleteSongId, {
-        onNone: () => DeleteDialogBinding.requestClose()(model),
-        onSome: songId =>
-          Update.withOutMessage(
-            DeleteDialogBinding.requestClose()(
-              modifyFields(model, {
-                maybePendingDeleteSongId: () => Option.none(),
-              }),
-            ),
-            OutMessage.ConfirmedDeleteSong({ songId }),
-          ),
+  ClickedDeleteSong: (model, { songId }) =>
+    DeleteDialogBinding.requestOpen()(
+      modifyFields(model, {
+        maybePendingDeleteSongId: () => Option.some(songId),
       }),
-  }),
-)
+    ),
+
+  ClickedConfirmDelete: model =>
+    Option.match(model.maybePendingDeleteSongId, {
+      onNone: () => DeleteDialogBinding.requestClose()(model),
+      onSome: songId =>
+        Update.withOutMessage(
+          DeleteDialogBinding.requestClose()(
+            modifyFields(model, {
+              maybePendingDeleteSongId: () => Option.none(),
+            }),
+          ),
+          OutMessage.ConfirmedDeleteSong({ songId }),
+        ),
+    }),
+})

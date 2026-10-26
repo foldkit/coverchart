@@ -12,7 +12,12 @@ import {
 } from '../../constant'
 import { placeChord } from './chordPlacement'
 import { GenerateEditorIds } from './command'
-import { EditorDefinition } from './definition'
+import {
+  EditorDefinition,
+  makeFieldsStep,
+  makeNoopStep,
+  makeStep,
+} from './definition'
 import { AddSectionMenuBlock, ChordMenuBlock } from './menu'
 import { IdRequest, OutMessage } from './message'
 import { Announcement, EditorMode } from './model'
@@ -21,7 +26,7 @@ const foldAddSectionMenuOutMessage = EditorDefinition.makeOutMessageFold(
   AddSectionMenuBlock,
   {
     Selected: ({ value }) =>
-      EditorDefinition.makeStep(model => ({
+      makeStep(model => ({
         model,
         commands: [
           GenerateEditorIds({
@@ -30,7 +35,7 @@ const foldAddSectionMenuOutMessage = EditorDefinition.makeOutMessageFold(
           }),
         ],
       })),
-    Closed: EditorDefinition.makeNoopStep,
+    Closed: makeNoopStep,
   },
 )
 
@@ -47,12 +52,12 @@ const foldChordMenuOutMessage = EditorDefinition.makeOutMessageFold(
   {
     Selected: ({ value }) =>
       value === CHORD_MENU_EMPTY
-        ? EditorDefinition.makeFieldsStep(() => ({
+        ? makeFieldsStep(() => ({
             mode: () => EditorMode.Viewing(),
           }))
         : placeChord(value === CHORD_MENU_CLEAR ? '' : value),
     Closed: () =>
-      EditorDefinition.makeStep(model => ({
+      makeStep(model => ({
         model:
           model.mode._tag === 'PlacingChord'
             ? modifyFields(model, { mode: () => EditorMode.Viewing() })
@@ -69,8 +74,10 @@ export const ChordMenuBinding = EditorDefinition.makeBinding(ChordMenuBlock, {
 const foldDragAndDropOutMessage = EditorDefinition.makeOutMessageFold(
   DragAndDropBlock,
   {
+    StartedKeyboardDrag: makeNoopStep,
+    ChangedKeyboardTarget: makeNoopStep,
     Reordered: ({ itemId, toIndex }) =>
-      EditorDefinition.makeStep(model => ({
+      makeStep(model => ({
         model: modifyFields(model, {
           announcement: () =>
             Announcement.Reordered({ sectionId: itemId, toIndex }),
@@ -78,7 +85,7 @@ const foldDragAndDropOutMessage = EditorDefinition.makeOutMessageFold(
         outMessage: OutMessage.ReorderedSection({ sectionId: itemId, toIndex }),
       })),
     Cancelled: () =>
-      EditorDefinition.makeFieldsStep(() => ({
+      makeFieldsStep(() => ({
         announcement: () => Announcement.Cancelled(),
       })),
   },
@@ -102,12 +109,12 @@ export const SectionDragAndDropBinding = EditorDefinition.makeBinding(
 const foldDeleteSectionDialogOutMessage = EditorDefinition.makeOutMessageFold(
   DialogBlock,
   {
-    Opened: EditorDefinition.makeNoopStep,
+    Opened: makeNoopStep,
     Closed: () =>
-      EditorDefinition.makeFieldsStep(() => ({
+      makeFieldsStep(() => ({
         maybePendingDeleteSectionId: () => Option.none(),
       })),
-    CompletedClose: EditorDefinition.makeNoopStep,
+    CompletedClose: makeNoopStep,
   },
 )
 

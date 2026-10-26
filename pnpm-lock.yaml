@@ -12,8 +12,8 @@ importers:
         specifier: 4.0.0
         version: 4.0.0(effect@4.0.0)
       '@foldkit/ui':
-        specifier: 0.169.0-canary.1f6776fa7ece
-        version: 0.169.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
+        specifier: 0.169.0-canary.f3be22cfeefe
+        version: 0.169.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -21,21 +21,21 @@ importers:
         specifier: 4.0.0
         version: 4.0.0
       foldkit:
-        specifier: 0.169.0-canary.1f6776fa7ece
-        version: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
+        specifier: 0.169.0-canary.f3be22cfeefe
+        version: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
     devDependencies:
       '@foldkit/devtools':
-        specifier: 0.169.0-canary.1f6776fa7ece
-        version: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(@foldkit/ui@0.169.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)))(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
+        specifier: 0.169.0-canary.f3be22cfeefe
+        version: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(@foldkit/ui@0.169.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)))(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
       '@foldkit/devtools-mcp':
-        specifier: 0.25.0-canary.1f6776fa7ece
-        version: 0.25.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(zod@4.4.3)
+        specifier: 0.25.0-canary.f3be22cfeefe
+        version: 0.25.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(zod@4.4.3)
       '@foldkit/oxlint-plugin':
-        specifier: 0.15.3-canary.1f6776fa7ece
-        version: 0.15.3-canary.1f6776fa7ece(effect@4.0.0)
+        specifier: 0.15.3-canary.f3be22cfeefe
+        version: 0.15.3-canary.f3be22cfeefe(effect@4.0.0)
       '@foldkit/vite-plugin':
-        specifier: 0.28.0-canary.1f6776fa7ece
-        version: 0.28.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(redis@6.3.0)(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))
+        specifier: 0.28.0-canary.f3be22cfeefe
+        version: 0.28.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(redis@6.3.0)(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))
       '@tailwindcss/vite':
         specifier: ^4.3.1
         version: 4.3.3(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))
@@ -130,40 +130,40 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@foldkit/devtools-mcp@0.25.0-canary.1f6776fa7ece':
-    resolution: {integrity: sha512-fHasn+125/s3X1+e22v3jNGkomTGkjGcliN4EEJfQfCwBT32duNtblHj/yt1D5kT1r3ug7Zm6OTsPZRh4Iu+pw==}
+  '@foldkit/devtools-mcp@0.25.0-canary.f3be22cfeefe':
+    resolution: {integrity: sha512-G85lCiV6U/v0R2qa4c+QvTyjGU7wnPtqZVpBqRSpbWPjK8rMEks6Vd+HPgtp33Z7E8Bxjg161fD+Mp8wKEjf5g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece
+      foldkit: 0.169.0-canary.f3be22cfeefe
 
-  '@foldkit/devtools@0.169.0-canary.1f6776fa7ece':
-    resolution: {integrity: sha512-Zay/smGi1vE635SCZI7jpnOJz1Rd2ikMmlPJ1bgybPRkFTsimfgpPsgbbx4AD0StyoYrV+iTDiL0OGwtIW+oGA==}
+  '@foldkit/devtools@0.169.0-canary.f3be22cfeefe':
+    resolution: {integrity: sha512-ED5VgK1+fCztuXy4ecWv3Dp/9MAsa/imnp+pgTY5DA8UjI2/DRPqvNv6D+9y2rfCbQ0kb4RvxRhbatAhSnCxig==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@effect/platform-browser': 4.0.0
-      '@foldkit/ui': 0.169.0-canary.1f6776fa7ece
+      '@foldkit/ui': 0.169.0-canary.f3be22cfeefe
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece
+      foldkit: 0.169.0-canary.f3be22cfeefe
 
-  '@foldkit/oxlint-plugin@0.15.3-canary.1f6776fa7ece':
-    resolution: {integrity: sha512-tglon6kfYUjfFflud76aUdRDpUkdrvjMO0Ok8DsfQdMdqd08bagUeQNQwPybZmBSAlc1AN4r4JYEczL5xMyZHw==}
+  '@foldkit/oxlint-plugin@0.15.3-canary.f3be22cfeefe':
+    resolution: {integrity: sha512-1V3IZe+vqz4mTWpXzO4pBB+pmerAfdjOjPQu1h1YT9XIs/Qj8YDV682x5954O4p1XyX1ycRBm7uKMvPCk4pWXA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  '@foldkit/ui@0.169.0-canary.1f6776fa7ece':
-    resolution: {integrity: sha512-WqI3jshbX+4bVvMSviM5nS6bY5lqfxIXHnaSA4t/10gRQHzC4vLJB+48w6fls7WSD3LCmQe49op9AgMlRgcAlw==}
+  '@foldkit/ui@0.169.0-canary.f3be22cfeefe':
+    resolution: {integrity: sha512-Q7A6kB6FUJdZEUjKL1e9XcWLXDDVR5A6pRCRPymuwEydh06GTlU2qp4vChl1W2xbBn8vHlSwtluYBi0ABl9c9g==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece
+      foldkit: 0.169.0-canary.f3be22cfeefe
 
-  '@foldkit/vite-plugin@0.28.0-canary.1f6776fa7ece':
-    resolution: {integrity: sha512-qi6jsmQp6qOhjo9MjYp3LvohP8l/DhDoWtavdEKhZF8nK/KTpRtqymM/QFqybCKDQntKVjY3MXpR1V1acgM5IQ==}
+  '@foldkit/vite-plugin@0.28.0-canary.f3be22cfeefe':
+    resolution: {integrity: sha512-vBlcKbtPhOIq15s2VOvw4RGo0wVf3OZNfsj3hI4pbFDtxT3xjDRiXbW7AhkZWoCKK7efPbsANpz8GrPfcYvLbw==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece
+      foldkit: 0.169.0-canary.f3be22cfeefe
       vite: ^8.0.0
 
   '@hono/node-server@1.19.17':
@@ -1074,8 +1074,8 @@ packages:
     resolution: {integrity: sha512-S8KoZgRZN+a5rNwqTxlZZePjT/4cnm0ROV70LedRHZ0p8u9fRID0hJUZQpkKLzro8LfmC8sx23bY6tVNxv8pQA==}
     engines: {node: '>= 18.0.0'}
 
-  foldkit@0.169.0-canary.1f6776fa7ece:
-    resolution: {integrity: sha512-epotaxGS7FC+bY0UdFanqDZ1aTzhUfcyUuLfVJ/GSdzzg7Gbltud7kGdcHCNoWYFGqU2tjK7MGmMtXpo56642Q==}
+  foldkit@0.169.0-canary.f3be22cfeefe:
+    resolution: {integrity: sha512-OLnBmqlPSF96xknP6EtXtkwVib6nU+ip6XPfNj1OtmtzZtrmHIJH4i8ZwDNluRjNQpx3Tz6UbqZQnlo3gAeKmA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@effect/platform-browser': 4.0.0
@@ -1807,11 +1807,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@foldkit/devtools-mcp@0.25.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(zod@4.4.3)':
+  '@foldkit/devtools-mcp@0.25.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(zod@4.4.3)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.31.0(zod@4.4.3)
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
+      foldkit: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
       ws: 8.22.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -1820,33 +1820,33 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@foldkit/devtools@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(@foldkit/ui@0.169.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)))(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))':
+  '@foldkit/devtools@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(@foldkit/ui@0.169.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)))(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))':
     dependencies:
       '@effect/platform-browser': 4.0.0(effect@4.0.0)
-      '@foldkit/ui': 0.169.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
+      '@foldkit/ui': 0.169.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))
       clsx: 2.1.1
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
+      foldkit: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
 
-  '@foldkit/oxlint-plugin@0.15.3-canary.1f6776fa7ece(effect@4.0.0)':
+  '@foldkit/oxlint-plugin@0.15.3-canary.f3be22cfeefe(effect@4.0.0)':
     dependencies:
       effect-oxlint: 0.4.0(effect@4.0.0)
       oxc-parser: 0.150.0
     transitivePeerDependencies:
       - effect
 
-  '@foldkit/ui@0.169.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))':
+  '@foldkit/ui@0.169.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))':
     dependencies:
       '@floating-ui/dom': 1.8.0
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
+      foldkit: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
 
-  '@foldkit/vite-plugin@0.28.0-canary.1f6776fa7ece(effect@4.0.0)(foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(redis@6.3.0)(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))':
+  '@foldkit/vite-plugin@0.28.0-canary.f3be22cfeefe(effect@4.0.0)(foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0))(redis@6.3.0)(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))':
     dependencies:
       '@effect/platform-node': 4.0.0(effect@4.0.0)(redis@6.3.0)
       '@effect/platform-node-shared': 4.0.0(effect@4.0.0)
       effect: 4.0.0
-      foldkit: 0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
+      foldkit: 0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0)
       magic-string: 1.4.3
       vite: 8.3.3(@types/node@26.2.0)(jiti@2.7.0)
       vitefu: 1.1.3(vite@8.3.3(@types/node@26.2.0)(jiti@2.7.0))
@@ -2494,7 +2494,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  foldkit@0.169.0-canary.1f6776fa7ece(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0):
+  foldkit@0.169.0-canary.f3be22cfeefe(@effect/platform-browser@4.0.0(effect@4.0.0))(effect@4.0.0):
     dependencies:
       '@effect/platform-browser': 4.0.0(effect@4.0.0)
       effect: 4.0.0
