@@ -13,16 +13,16 @@
   },
   "dependencies": {
     "@effect/platform-browser": "4.0.0",
-    "@foldkit/ui": "0.169.0-canary.f3be22cfeefe",
+    "@foldkit/ui": "0.169.0-canary.90746b32d2ca",
     "clsx": "^2.1.1",
     "effect": "4.0.0",
-    "foldkit": "0.169.0-canary.f3be22cfeefe"
+    "foldkit": "0.169.0-canary.90746b32d2ca"
   },
   "devDependencies": {
-    "@foldkit/devtools": "0.169.0-canary.f3be22cfeefe",
-    "@foldkit/devtools-mcp": "0.25.0-canary.f3be22cfeefe",
-    "@foldkit/oxlint-plugin": "0.15.3-canary.f3be22cfeefe",
-    "@foldkit/vite-plugin": "0.28.0-canary.f3be22cfeefe",
+    "@foldkit/devtools": "0.169.0-canary.90746b32d2ca",
+    "@foldkit/devtools-mcp": "0.25.0-canary.90746b32d2ca",
+    "@foldkit/oxlint-plugin": "0.15.3-canary.90746b32d2ca",
+    "@foldkit/vite-plugin": "0.28.0-canary.90746b32d2ca",
     "@tailwindcss/vite": "^4.3.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "happy-dom": "^20.10.4",
